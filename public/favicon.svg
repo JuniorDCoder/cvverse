@@ -1,0 +1,42 @@
+<svg width="166" height="166" viewBox="0 0 166 166" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="50%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#d946ef"/>
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background rounded square -->
+  <rect x="8" y="8" width="150" height="150" rx="30" ry="30" fill="url(#brandGradient)"/>
+  
+  <!-- Document/CV icon -->
+  <g transform="translate(28, 22)">
+    <!-- Main document shape -->
+    <path d="M15 0 L75 0 L90 15 L90 105 L0 105 L0 15 Z" fill="white" opacity="0.95"/>
+    <!-- Folded corner -->
+    <path d="M75 0 L75 15 L90 15 Z" fill="white" opacity="0.7"/>
+    
+    <!-- Profile circle -->
+    <circle cx="45" cy="28" r="14" fill="url(#accentGradient)" opacity="0.9"/>
+    
+    <!-- Text lines -->
+    <rect x="12" y="50" width="66" height="5" rx="2.5" fill="url(#brandGradient)" opacity="0.6"/>
+    <rect x="18" y="60" width="54" height="3" rx="1.5" fill="#94a3b8" opacity="0.5"/>
+    
+    <!-- Section lines -->
+    <rect x="12" y="72" width="40" height="4" rx="2" fill="url(#brandGradient)" opacity="0.7"/>
+    <rect x="12" y="80" width="66" height="2.5" rx="1.25" fill="#94a3b8" opacity="0.4"/>
+    <rect x="12" y="86" width="60" height="2.5" rx="1.25" fill="#94a3b8" opacity="0.4"/>
+    <rect x="12" y="92" width="52" height="2.5" rx="1.25" fill="#94a3b8" opacity="0.4"/>
+  </g>
+  
+  <!-- Sparkle/AI indicator -->
+  <g transform="translate(105, 100)">
+    <path d="M15 0 L17 11 L28 13 L17 15 L15 26 L13 15 L2 13 L13 11 Z" fill="white" opacity="0.9"/>
+  </g>
+</svg>
