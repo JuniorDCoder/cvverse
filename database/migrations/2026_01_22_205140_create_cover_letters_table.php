@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('cover_letters', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('job_application_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
             $table->text('content');
             $table->string('tone')->default('professional');

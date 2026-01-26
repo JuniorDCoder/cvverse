@@ -17,7 +17,6 @@ return new class extends Migration
             $table->integer('version_number');
             $table->json('content');
             $table->string('change_summary')->nullable();
-            $table->foreignId('job_application_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
         });
     }
