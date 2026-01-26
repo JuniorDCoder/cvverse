@@ -13,7 +13,6 @@ import {
     Calendar,
 } from 'lucide-vue-next';
 import { ref, computed, onMounted } from 'vue';
-import { useToast } from '@/composables/useToast';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import ShimmerCard from '@/components/ShimmerCard.vue';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +26,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/composables/useToast';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { dashboard } from '@/routes';
 import { index as cvsIndex, create as cvCreate, show as cvShow, edit as cvEdit, destroy as cvDestroy } from '@/routes/cvs';

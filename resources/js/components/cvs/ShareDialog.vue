@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Share2, Copy, Check, Trash2, Clock, Shield, AlertCircle, Loader2 } from 'lucide-vue-next';
 import { ref, onMounted } from 'vue';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -21,7 +22,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/composables/useToast';
-import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 
 interface Share {
     id: string;

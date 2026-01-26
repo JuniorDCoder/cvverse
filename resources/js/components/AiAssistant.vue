@@ -19,6 +19,7 @@ import {
 } from 'lucide-vue-next';
 import { marked } from 'marked';
 import { ref, watch, nextTick, computed, onMounted } from 'vue';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -29,7 +30,6 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useToast } from '@/composables/useToast';
-import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 
 const page = usePage();
 

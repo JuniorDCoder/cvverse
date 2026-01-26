@@ -21,14 +21,14 @@ import {
     Loader2
 } from 'lucide-vue-next';
 import { ref, computed, watch } from 'vue';
-import { useToast } from '@/composables/useToast';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import { useToast } from '@/composables/useToast';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { dashboard } from '@/routes';
 import { index as jobsIndex, edit as jobEdit, destroy as jobDestroy } from '@/routes/jobs';

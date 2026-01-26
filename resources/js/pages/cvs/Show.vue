@@ -28,7 +28,6 @@ import {
 } from 'lucide-vue-next';
 import { marked } from 'marked';
 import { ref, computed, watch } from 'vue';
-import { useToast } from '@/composables/useToast';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import ShareDialog from '@/components/cvs/ShareDialog.vue';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +35,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/composables/useToast';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { dashboard } from '@/routes';
 import { index as cvsIndex, edit as cvEdit } from '@/routes/cvs';

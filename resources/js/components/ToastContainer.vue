@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
-import { usePage } from '@inertiajs/vue3';
 import { useToast } from '@/composables/useToast';
 
 const { toasts, removeToast, addToast } = useToast();

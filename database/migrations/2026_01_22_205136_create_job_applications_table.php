@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('company_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('cv_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('cover_letter_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('cv_id')->nullable()->constrained('cvs')->nullOnDelete();
+            $table->foreignId('cover_letter_id')->nullable()->constrained('cover_letters')->nullOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->json('requirements')->nullable();
