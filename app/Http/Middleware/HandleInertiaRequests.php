@@ -27,6 +27,23 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
+     * Handle Inertia requests.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function handle(Request $request, \Closure $next)
+    {
+        // Redirect admins away from dashboard to admin dashboard
+        if ($request->user()?->isAdmin() && $request->routeIs('dashboard')) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        return parent::handle($request, $next);
+    }
+
+    /**
      * Define the props that are shared by default.
      *
      * @see https://inertiajs.com/shared-data
@@ -40,6 +57,12 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
+            ],
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+                'warning' => $request->session()->get('warning'),
+                'info' => $request->session()->get('info'),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

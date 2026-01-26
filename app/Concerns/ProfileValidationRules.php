@@ -2,6 +2,7 @@
 
 namespace App\Concerns;
 
+use App\Http\Controllers\OnboardingController;
 use App\Models\User;
 use Illuminate\Validation\Rule;
 
@@ -17,6 +18,14 @@ trait ProfileValidationRules
         return [
             'name' => $this->nameRules(),
             'email' => $this->emailRules($userId),
+            'job_title' => ['nullable', 'string', 'max:100'],
+            'industry' => ['nullable', 'string', Rule::in(array_keys(OnboardingController::getIndustries()))],
+            'experience_level' => ['nullable', 'string', Rule::in(array_keys(OnboardingController::getExperienceLevels()))],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'location' => ['nullable', 'string', 'max:100'],
+            'bio' => ['nullable', 'string', 'max:500'],
+            'interests' => ['nullable', 'array'],
+            'interests.*' => ['string', Rule::in(array_keys(OnboardingController::getInterests()))],
         ];
     }
 

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { register, pricing, contact } from '@/routes';
-import LandingLayout from '@/layouts/LandingLayout.vue';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import LandingLayout from '@/layouts/LandingLayout.vue';
+import { register, pricing, contact } from '@/routes';
 
 const mainFeatures = [
     {

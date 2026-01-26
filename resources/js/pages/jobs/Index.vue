@@ -1,14 +1,4 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import { index as jobsIndex, create as jobCreate } from '@/routes/jobs';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { 
     Briefcase, 
@@ -24,13 +14,23 @@ import {
     Eye
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { dashboard } from '@/routes';
+import { index as jobsIndex, create as jobCreate } from '@/routes/jobs';
+import { type BreadcrumbItem } from '@/types';
 
 interface Company {
     id: number;

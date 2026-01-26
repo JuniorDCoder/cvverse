@@ -1,16 +1,4 @@
 <script setup lang="ts">
-import ShimmerCard from '@/components/ShimmerCard.vue';
-import ShimmerStats from '@/components/ShimmerStats.vue';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import { index as jobsIndex, create as jobCreate } from '@/routes/jobs';
-import { index as cvsIndex, create as cvCreate } from '@/routes/cvs';
-import { index as coverLettersIndex } from '@/routes/cover-letters';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { 
     Briefcase, 
@@ -27,6 +15,18 @@ import {
     Clock
 } from 'lucide-vue-next';
 import { computed, ref, onMounted } from 'vue';
+import ShimmerCard from '@/components/ShimmerCard.vue';
+import ShimmerStats from '@/components/ShimmerStats.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { dashboard } from '@/routes';
+import { index as coverLettersIndex } from '@/routes/cover-letters';
+import { index as cvsIndex, create as cvCreate } from '@/routes/cvs';
+import { index as jobsIndex, create as jobCreate } from '@/routes/jobs';
+import { type BreadcrumbItem } from '@/types';
 
 interface JobApplication {
     id: number;

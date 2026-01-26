@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { useForm, Head, Link } from '@inertiajs/vue3';
+import { Check } from 'lucide-vue-next';
+import { computed } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import OnboardingLayout from '@/layouts/OnboardingLayout.vue';
-import { useForm, Head, Link } from '@inertiajs/vue3';
-import { Check } from 'lucide-vue-next';
-import { computed } from 'vue';
 
 const props = defineProps<{
     availableInterests: Record<string, string>;

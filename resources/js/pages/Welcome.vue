@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { register, login, services, pricing } from '@/routes';
 import { Link } from '@inertiajs/vue3';
-import LandingLayout from '@/layouts/LandingLayout.vue';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import LandingLayout from '@/layouts/LandingLayout.vue';
+import { register, login, services, pricing } from '@/routes';
 
 withDefaults(
     defineProps<{

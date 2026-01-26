@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button';
-import OnboardingLayout from '@/layouts/OnboardingLayout.vue';
 import { usePage, Head, router } from '@inertiajs/vue3';
 import { PartyPopper, FileText, Sparkles, Palette, Download } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
+import { Button } from '@/components/ui/button';
+import OnboardingLayout from '@/layouts/OnboardingLayout.vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);

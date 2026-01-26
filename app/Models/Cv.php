@@ -81,6 +81,22 @@ class Cv extends Model
         return $this->hasMany(JobApplication::class);
     }
 
+    /**
+     * @return HasMany<CvShare, $this>
+     */
+    public function shares(): HasMany
+    {
+        return $this->hasMany(CvShare::class);
+    }
+
+    /**
+     * @return HasMany<CvComment, $this>
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(CvComment::class);
+    }
+
     public function createVersion(?string $changeSummary = null, ?int $jobApplicationId = null): CvVersion
     {
         $latestVersion = $this->versions()->max('version_number') ?? 0;

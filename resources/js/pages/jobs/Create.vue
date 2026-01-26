@@ -1,17 +1,4 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import { index as jobsIndex, store as jobStore, crawl as jobCrawl } from '@/routes/jobs';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { 
     ArrowLeft,
@@ -30,6 +17,20 @@ import {
     AlertCircle
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
+import { useToast } from '@/composables/useToast';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { dashboard } from '@/routes';
+import { index as jobsIndex, store as jobStore, crawl as jobCrawl } from '@/routes/jobs';
+import { type BreadcrumbItem } from '@/types';
 
 interface Cv {
     id: number;
@@ -75,6 +76,8 @@ const form = useForm({
     notes: '',
     cv_id: '',
 });
+
+const { addToast } = useToast();
 
 // Skill input
 const newSkill = ref('');
@@ -138,11 +141,26 @@ const crawlJobUrl = async () => {
             form.experience_level = data.data.experience_level || '';
             form.source_url = urlInput.value;
             activeTab.value = 'manual'; // Switch to manual to show/edit the data
+            addToast({
+                title: 'Success',
+                message: 'Job details extracted successfully!',
+                type: 'success'
+            });
         } else {
             crawlError.value = data.message || 'Failed to extract job information';
+            addToast({
+                title: 'Error',
+                message: crawlError.value,
+                type: 'error'
+            });
         }
     } catch (error) {
         crawlError.value = 'Failed to crawl job posting. Please enter details manually.';
+        addToast({
+            title: 'Error',
+            message: 'Failed to crawl job posting.',
+            type: 'error'
+        });
     } finally {
         isCrawling.value = false;
     }

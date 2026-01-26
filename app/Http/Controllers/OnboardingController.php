@@ -63,6 +63,30 @@ class OnboardingController extends Controller
     ];
 
     /**
+     * Get industry options.
+     */
+    public static function getIndustries(): array
+    {
+        return self::INDUSTRIES;
+    }
+
+    /**
+     * Get experience level options.
+     */
+    public static function getExperienceLevels(): array
+    {
+        return self::EXPERIENCE_LEVELS;
+    }
+
+    /**
+     * Get interest options.
+     */
+    public static function getInterests(): array
+    {
+        return self::INTERESTS;
+    }
+
+    /**
      * Show the onboarding welcome step.
      */
     public function welcome(): Response

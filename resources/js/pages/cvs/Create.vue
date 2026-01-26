@@ -1,18 +1,4 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import { index as cvsIndex, store as cvStore } from '@/routes/cvs';
-import { index as jobsIndex } from '@/routes/jobs';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
     ArrowLeft,
@@ -32,6 +18,21 @@ import {
     Languages,
 } from 'lucide-vue-next';
 import { ref } from 'vue';
+import { useToast } from '@/composables/useToast';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { dashboard } from '@/routes';
+import { index as cvsIndex, store as cvStore } from '@/routes/cvs';
+import { index as jobsIndex } from '@/routes/jobs';
+import { type BreadcrumbItem } from '@/types';
 
 interface Props {
     templates: string[];
@@ -116,6 +117,8 @@ const form = useForm({
         proficiency: string;
     }>,
 });
+
+const { addToast } = useToast();
 
 const templateLabels: Record<string, string> = {
     modern: 'Modern',
@@ -250,8 +253,25 @@ const submitUpload = async () => {
         });
         const data = await response.json();
         if (response.ok) {
+            addToast({
+                title: 'Success',
+                message: 'CV uploaded and parsed successfully.',
+                type: 'success'
+            });
             window.location.href = `/cvs/${data.cv.id}`;
+        } else {
+            addToast({
+                title: 'Error',
+                message: data.message || 'Failed to upload CV.',
+                type: 'error'
+            });
         }
+    } catch (error) {
+        addToast({
+            title: 'Error',
+            message: 'A network error occurred.',
+            type: 'error'
+        });
     } finally {
         uploadForm.processing = false;
     }

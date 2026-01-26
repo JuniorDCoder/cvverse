@@ -1,12 +1,4 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import ShimmerCard from '@/components/ShimmerCard.vue';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     Plus,
@@ -21,6 +13,11 @@ import {
     Briefcase,
 } from 'lucide-vue-next';
 import { ref, computed, onMounted } from 'vue';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import ShimmerCard from '@/components/ShimmerCard.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,7 +25,10 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import { Input } from '@/components/ui/input';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { dashboard } from '@/routes';
+import { type BreadcrumbItem } from '@/types';
 
 interface JobApplication {
     id: number;

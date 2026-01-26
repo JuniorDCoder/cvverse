@@ -167,7 +167,7 @@
             @foreach($cv->projects as $project)
                 <div class="item">
                     <div class="item-header">
-                        <span class="item-title">{{ $project['name'] }}</span>
+                        <span class="item-title">{{ $project['name'] ?? $project['title'] ?? 'Project' }}</span>
                     </div>
                      @if(isset($project['url']))
                         <div class="item-subtitle">{{ $project['url'] }}</div>

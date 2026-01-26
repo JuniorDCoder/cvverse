@@ -1,13 +1,4 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import ShimmerCard from '@/components/ShimmerCard.vue';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import { index as cvsIndex, create as cvCreate, show as cvShow, edit as cvEdit, destroy as cvDestroy } from '@/routes/cvs';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     Plus,
@@ -22,6 +13,12 @@ import {
     Calendar,
 } from 'lucide-vue-next';
 import { ref, computed, onMounted } from 'vue';
+import { useToast } from '@/composables/useToast';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import ShimmerCard from '@/components/ShimmerCard.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -29,7 +26,11 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import { Input } from '@/components/ui/input';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { dashboard } from '@/routes';
+import { index as cvsIndex, create as cvCreate, show as cvShow, edit as cvEdit, destroy as cvDestroy } from '@/routes/cvs';
+import { type BreadcrumbItem } from '@/types';
 
 interface Cv {
     id: number;
@@ -61,6 +62,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const search = ref('');
 const isLoading = ref(true);
+const { addToast } = useToast();
 
 onMounted(() => {
     setTimeout(() => {
@@ -115,17 +117,39 @@ const deleteCv = () => {
 };
 
 const setPrimary = async (id: number) => {
-    await fetch(`/cvs/${id}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-XSRF-TOKEN': decodeURIComponent(document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1] || ''),
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify({ is_primary: true }),
-    });
-    router.reload();
+    try {
+        const response = await fetch(`/cvs/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1] || ''),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ is_primary: true }),
+        });
+        
+        if (response.ok) {
+            addToast({
+                title: 'Success',
+                message: 'Primary CV updated.',
+                type: 'success'
+            });
+            router.reload();
+        } else {
+            addToast({
+                title: 'Error',
+                message: 'Failed to update primary CV.',
+                type: 'error'
+            });
+        }
+    } catch (error) {
+        addToast({
+            title: 'Error',
+            message: 'A network error occurred.',
+            type: 'error'
+        });
+    }
 };
 </script>
 

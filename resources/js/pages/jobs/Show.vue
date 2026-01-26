@@ -1,14 +1,4 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import { index as jobsIndex, edit as jobEdit, destroy as jobDestroy } from '@/routes/jobs';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { 
     ArrowLeft,
@@ -30,7 +20,19 @@ import {
     XCircle,
     Loader2
 } from 'lucide-vue-next';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { useToast } from '@/composables/useToast';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { dashboard } from '@/routes';
+import { index as jobsIndex, edit as jobEdit, destroy as jobDestroy } from '@/routes/jobs';
+import { type BreadcrumbItem } from '@/types';
 
 interface Company {
     id: number;
@@ -99,7 +101,13 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const isAnalyzing = ref(false);
 const analysis = ref(props.application.ai_analysis);
+
+watch(() => props.application.ai_analysis, (newVal) => {
+    analysis.value = newVal;
+});
 const isUpdatingStatus = ref(false);
+const { addToast } = useToast();
+const isDeleteModalOpen = ref(false);
 
 const statusColors: Record<string, string> = {
     saved: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
@@ -139,6 +147,17 @@ const updateStatus = async (newStatus: string) => {
             body: JSON.stringify({ status: newStatus }),
         });
         router.reload({ only: ['application'] });
+        addToast({
+            title: 'Success',
+            message: `Status updated to ${statusLabels[newStatus]}.`,
+            type: 'success'
+        });
+    } catch (error) {
+        addToast({
+            title: 'Error',
+            message: 'Failed to update status.',
+            type: 'error'
+        });
     } finally {
         isUpdatingStatus.value = false;
     }
@@ -159,21 +178,41 @@ const analyzeWithAI = async () => {
         const data = await response.json();
         if (data.success) {
             analysis.value = data.analysis;
+            addToast({
+                title: 'Success',
+                message: 'AI analysis completed.',
+                type: 'success'
+            });
+        } else {
+            addToast({
+                title: 'Error',
+                message: data.message || 'Failed to analyze application.',
+                type: 'error'
+            });
         }
+    } catch (error) {
+        addToast({
+            title: 'Error',
+            message: 'A network error occurred.',
+            type: 'error'
+        });
     } finally {
         isAnalyzing.value = false;
     }
 };
 
+const confirmDelete = () => {
+    isDeleteModalOpen.value = true;
+};
+
 const deleteApplication = () => {
-    if (confirm('Are you sure you want to delete this application?')) {
-        router.delete(`/jobs/${props.application.id}`);
-    }
+    router.delete(`/jobs/${props.application.id}`);
+    isDeleteModalOpen.value = false;
 };
 
 const formatMarkdown = (text: string) => {
     // Basic bold formatting
-    let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>');
+    const formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>');
     return formatted;
 };
 </script>
@@ -239,10 +278,18 @@ const formatMarkdown = (text: string) => {
                             Edit
                         </Link>
                     </Button>
-                    <Button variant="destructive" size="sm" @click="deleteApplication">
-                        <Trash2 class="h-4 w-4 mr-2" />
-                        Delete
-                    </Button>
+                    <ConfirmDeleteModal
+                        title="Delete Application"
+                        description="Are you sure you want to delete this application? This action cannot be undone."
+                        @confirm="deleteApplication"
+                    >
+                        <template #trigger>
+                            <Button variant="destructive" size="sm">
+                                <Trash2 class="h-4 w-4 mr-2" />
+                                Delete
+                            </Button>
+                        </template>
+                    </ConfirmDeleteModal>
                 </div>
             </div>
 

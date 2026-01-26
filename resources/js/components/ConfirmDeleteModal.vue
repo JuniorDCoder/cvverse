@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -10,7 +11,6 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { ref, computed } from 'vue';
 
 interface Props {
     title?: string;

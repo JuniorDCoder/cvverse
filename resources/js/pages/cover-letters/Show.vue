@@ -1,13 +1,4 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
-import AppLayout from '@/layouts/AppLayout.vue';
-import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
-import { dashboard } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     ArrowLeft,
@@ -24,8 +15,17 @@ import {
     Calendar,
     CheckCircle,
 } from 'lucide-vue-next';
-import { ref } from 'vue';
 import { marked } from 'marked';
+import { ref } from 'vue';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { dashboard } from '@/routes';
+import { type BreadcrumbItem } from '@/types';
 
 interface JobApplication {
     id: number;
@@ -260,7 +260,7 @@ const deleteCoverLetter = () => {
                             <p class="text-sm font-semibold text-blue-900 dark:text-blue-100">{{ typeof change === 'string' ? change : change.change }}</p>
                             <div v-if="typeof change !== 'string' && change.why" 
                                 class="text-xs text-blue-700/80 dark:text-blue-300/80 mt-1.5 prose prose-xs dark:prose-invert max-w-none"
-                                v-html="marked(change.why)"
+                                v-html="marked(typeof (change.why || change) === 'string' ? (change.why || change) : JSON.stringify(change.why || change))"
                             ></div>
                         </div>
                     </div>

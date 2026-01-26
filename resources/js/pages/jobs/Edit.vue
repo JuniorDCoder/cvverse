@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ArrowLeft, Plus, X, Save, Loader2 } from 'lucide-vue-next';
+import { ref, computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,9 +13,6 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { dashboard } from '@/routes';
 import { index as jobsIndex, show as jobShow, update as jobUpdate } from '@/routes/jobs';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, Plus, X, Save, Loader2 } from 'lucide-vue-next';
-import { ref, computed } from 'vue';
 
 interface Company {
     id: number;

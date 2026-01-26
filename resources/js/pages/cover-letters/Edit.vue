@@ -1,4 +1,13 @@
 <script setup lang="ts">
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import {
+    ArrowLeft,
+    Mail,
+    Save,
+    Loader2,
+    Sparkles,
+} from 'lucide-vue-next';
+import { ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,15 +18,6 @@ import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import {
-    ArrowLeft,
-    Mail,
-    Save,
-    Loader2,
-    Sparkles,
-} from 'lucide-vue-next';
-import { ref } from 'vue';
 
 interface JobApplication {
     id: number;
@@ -56,6 +56,14 @@ const form = useForm({
     content: props.coverLetter.content,
     job_application_id: props.coverLetter.job_application_id?.toString() ?? '',
 });
+
+// Sync form with AI edits
+watch(() => props.coverLetter, (newLetter: CoverLetter) => {
+    form.name = newLetter.name;
+    form.tone = newLetter.tone;
+    form.content = newLetter.content;
+    form.job_application_id = newLetter.job_application_id?.toString() ?? '';
+}, { deep: true });
 
 const toneLabels: Record<string, string> = {
     professional: 'Professional',

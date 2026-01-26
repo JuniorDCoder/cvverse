@@ -1,16 +1,4 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import { index as cvsIndex, show as cvShow } from '@/routes/cvs';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
     ArrowLeft,
@@ -26,7 +14,19 @@ import {
     Languages,
     Sparkles,
 } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { dashboard } from '@/routes';
+import { index as cvsIndex, show as cvShow } from '@/routes/cvs';
+import { type BreadcrumbItem } from '@/types';
 
 interface Cv {
     id: number;
@@ -98,6 +98,26 @@ const form = useForm({
     skills: props.cv.skills ?? [],
     languages: props.cv.languages ?? [],
 });
+
+// Sync form with AI edits
+watch(() => props.cv, (newCv: Cv) => {
+    form.name = newCv.name;
+    form.template = newCv.template;
+    form.is_primary = newCv.is_primary;
+    form.summary = newCv.summary ?? '';
+    form.personal_info = {
+        full_name: newCv.personal_info?.full_name ?? '',
+        email: newCv.personal_info?.email ?? '',
+        phone: newCv.personal_info?.phone ?? '',
+        location: newCv.personal_info?.location ?? '',
+        linkedin: newCv.personal_info?.linkedin ?? '',
+        website: newCv.personal_info?.website ?? '',
+    };
+    form.experience = newCv.experience ?? [];
+    form.education = newCv.education ?? [];
+    form.skills = newCv.skills ?? [];
+    form.languages = newCv.languages ?? [];
+}, { deep: true });
 
 const templateLabels: Record<string, string> = {
     modern: 'Modern',

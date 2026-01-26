@@ -1,4 +1,20 @@
 <script setup lang="ts">
+import { Link, usePage } from '@inertiajs/vue3';
+import { 
+    LayoutGrid, 
+    FileText, 
+    Briefcase,
+    Mail,
+    Settings,
+    HelpCircle,
+    BookOpen,
+    Users,
+    BarChart3,
+    LayoutTemplate,
+    Shield,
+    MessageSquare,
+} from 'lucide-vue-next';
+import { computed } from 'vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -14,22 +30,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
-import { Link, usePage } from '@inertiajs/vue3';
-import { 
-    LayoutGrid, 
-    FileText, 
-    Briefcase,
-    Mail,
-    Settings,
-    HelpCircle,
-    BookOpen,
-    Users,
-    BarChart3,
-    LayoutTemplate,
-    Shield,
-} from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
-import { computed } from 'vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
@@ -70,6 +71,26 @@ const adminNavItems: NavItem[] = [
         title: 'Users',
         href: '/admin/users',
         icon: Users,
+    },
+    {
+        title: 'CVs',
+        href: '/admin/cvs',
+        icon: FileText,
+    },
+    {
+        title: 'Cover Letters',
+        href: '/admin/cover-letters',
+        icon: Mail,
+    },
+    {
+        title: 'Applications',
+        href: '/admin/applications',
+        icon: Briefcase,
+    },
+    {
+        title: 'Chat Sessions',
+        href: '/admin/chat-sessions',
+        icon: MessageSquare,
     },
     {
         title: 'Templates',

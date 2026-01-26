@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CoverLetterController;
 use App\Http\Controllers\CvController;
+use App\Http\Controllers\CvShareController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\OnboardingController;
@@ -76,26 +77,32 @@ Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
 
     // Admin routes
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/', function () {
-            return Inertia::render('admin/Dashboard');
-        })->name('dashboard');
-
-        Route::get('/users', function () {
-            return Inertia::render('admin/Users');
-        })->name('users');
-
-        Route::get('/templates', function () {
-            return Inertia::render('admin/Templates');
-        })->name('templates');
-
-        Route::get('/analytics', function () {
-            return Inertia::render('admin/Analytics');
-        })->name('analytics');
-
-        Route::get('/settings', function () {
-            return Inertia::render('admin/Settings');
-        })->name('settings');
+        Route::get('/', [\App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
+        Route::get('/users', [\App\Http\Controllers\Admin\AdminController::class, 'users'])->name('users');
+        Route::get('/cvs', [\App\Http\Controllers\Admin\AdminController::class, 'cvs'])->name('cvs');
+        Route::get('/cover-letters', [\App\Http\Controllers\Admin\AdminController::class, 'coverLetters'])->name('cover-letters');
+        Route::get('/applications', [\App\Http\Controllers\Admin\AdminController::class, 'applications'])->name('applications');
+        Route::get('/chat-sessions', [\App\Http\Controllers\Admin\AdminController::class, 'chatSessions'])->name('chat-sessions');
+        Route::get('/templates', [\App\Http\Controllers\Admin\AdminController::class, 'templates'])->name('templates');
+        Route::get('/analytics', [\App\Http\Controllers\Admin\AdminController::class, 'analytics'])->name('analytics');
+        Route::get('/settings', [\App\Http\Controllers\Admin\AdminController::class, 'settings'])->name('settings');
     });
+
+    // AI Chat History
+    Route::get('chat/sessions', [\App\Http\Controllers\AiChatController::class, 'index'])->name('chat.sessions.index');
+    Route::get('chat/sessions/{session}', [\App\Http\Controllers\AiChatController::class, 'show'])->name('chat.sessions.show');
+    Route::post('chat/messages', [\App\Http\Controllers\AiChatController::class, 'store'])->name('chat.messages.store');
+    Route::delete('chat/sessions/{session}', [\App\Http\Controllers\AiChatController::class, 'destroy'])->name('chat.sessions.destroy');
+
+    // CV Distribution/Sharing
+    Route::get('cvs/{cv}/shares', [CvShareController::class, 'getShares'])->name('cvs.shares.index');
+    Route::post('cvs/{cv}/shares', [CvShareController::class, 'storeShare'])->name('cvs.shares.store');
+    Route::delete('cvs/{cv}/shares/{share}', [CvShareController::class, 'destroyShare'])->name('cvs.shares.destroy');
 });
+
+// Public Share Routes
+Route::get('s/{token}', [CvShareController::class, 'show'])->name('cvs.shared.show');
+Route::post('s/{token}/update', [CvShareController::class, 'update'])->name('cvs.shared.update');
+Route::post('s/{token}/comment', [CvShareController::class, 'comment'])->name('cvs.shared.comment');
 
 require __DIR__.'/settings.php';

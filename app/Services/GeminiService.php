@@ -45,10 +45,10 @@ class GeminiService
                 [
                     'parts' => array_merge(
                         [['text' => $prompt]],
-                        $filePath && Storage::disk('local')->exists($filePath) ? [[
+                        $filePath && (Storage::disk('local')->exists($filePath) || file_exists($filePath)) ? [[
                             'inline_data' => [
-                                'mime_type' => Storage::disk('local')->mimeType($filePath),
-                                'data' => base64_encode(Storage::disk('local')->get($filePath)),
+                                'mime_type' => file_exists($filePath) ? mime_content_type($filePath) : Storage::disk('local')->mimeType($filePath),
+                                'data' => base64_encode(file_exists($filePath) ? file_get_contents($filePath) : Storage::disk('local')->get($filePath)),
                             ],
                         ]] : []
                     ),
@@ -569,7 +569,7 @@ PROMPT;
      *
      * @return array<string, mixed>|null
      */
-    public function chatWithAi(string $message, array $history = []): ?array
+    public function chatWithAi(string $message, array $history = [], ?string $filePath = null): ?array
     {
         $historyJson = json_encode($history);
 
@@ -588,6 +588,66 @@ Return a valid JSON object with:
 Guidelines:
 - Be helpful, professional, and concise.
 - Provide actionable advice.
+- If the user provides an image or file, analyze it and provide feedback.
+
+Return ONLY valid JSON, no markdown or explanation.
+PROMPT;
+
+        $response = $this->generateContent($prompt, [], $filePath);
+        $text = $this->extractText($response);
+
+        if (! $text) {
+            return null;
+        }
+
+        $text = preg_replace('/```json\s*/', '', $text);
+        $text = preg_replace('/```\s*/', '', $text);
+        $text = trim($text);
+
+        try {
+            return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            Log::error('Failed to parse Gemini generic chat response', ['text' => $text]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Chat with AI in the context of a specific resource (CV, Job, Cover Letter)
+     *
+     * @return array<string, mixed>|null
+     */
+    public function chatWithResource(string $resourceType, array $resourceData, string $message, array $history = []): ?array
+    {
+        $resourceJson = json_encode($resourceData);
+        $historyJson = json_encode($history);
+
+        $prompt = <<<PROMPT
+You are a professional assistant specialized in {$resourceType} management.
+The user is currently viewing/editing this {$resourceType} and wants help or changes.
+
+Current {$resourceType} Data:
+{$resourceJson}
+
+Conversation History:
+{$historyJson}
+
+User Message:
+{$message}
+
+Return a valid JSON object with:
+- message: Your response to the user.
+- updated_data: An object containing ONLY the fields that should be updated in the {$resourceType} (or null if no changes). 
+- changes_summary: A brief description of changes made.
+
+Guidelines:
+- If the user asks to modify the {$resourceType} (e.g. "change the title", "add this skill", "rewrite the content"), provide the new values in `updated_data`.
+- Keep the structure of `updated_data` consistent with the "Current {$resourceType} Data".
+- Be professional, concise, and helpful.
+- If it's a CV, help improve structure and wording.
+- If it's a Job Application, help with matching their profile.
+- If it's a Cover Letter, help with tone and impact.
 
 Return ONLY valid JSON, no markdown or explanation.
 PROMPT;
@@ -606,7 +666,7 @@ PROMPT;
         try {
             return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
-            Log::error('Failed to parse Gemini generic chat response', ['text' => $text]);
+            Log::error("Failed to parse Gemini {$resourceType} chat response", ['text' => $text]);
 
             return null;
         }

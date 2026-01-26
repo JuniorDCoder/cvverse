@@ -17,6 +17,11 @@ class EnsureOnboardingCompleted
     {
         $user = $request->user();
 
+        // Admins skip onboarding
+        if ($user && $user->isAdmin()) {
+            return $next($request);
+        }
+
         if ($user && ! $user->hasCompletedOnboarding()) {
             // Allow access to onboarding routes and logout
             if ($request->routeIs('onboarding.*') || $request->routeIs('logout') || $request->routeIs('verification.*')) {

@@ -31,6 +31,7 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
+        $this->configureResponses();
     }
 
     /**
@@ -40,6 +41,22 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+    }
+
+    /**
+     * Configure Fortify responses.
+     */
+    private function configureResponses(): void
+    {
+        // Handle login redirect for admins
+        if (method_exists(Fortify::class, 'loginResponse')) {
+            Fortify::loginResponse(function (Request $request, $user) {
+                if ($user && $user->isAdmin()) {
+                    return redirect()->route('admin.dashboard');
+                }
+                return redirect()->route('dashboard');
+            });
+        }
     }
 
     /**

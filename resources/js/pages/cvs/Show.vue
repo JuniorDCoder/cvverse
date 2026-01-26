@@ -1,13 +1,4 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import { index as cvsIndex, edit as cvEdit } from '@/routes/cvs';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     ArrowLeft,
@@ -33,16 +24,42 @@ import {
     RefreshCcw,
     Printer,
     FileType,
+    MessageSquare,
 } from 'lucide-vue-next';
-import { ref, computed } from 'vue';
 import { marked } from 'marked';
+import { ref, computed, watch } from 'vue';
+import { useToast } from '@/composables/useToast';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import ShareDialog from '@/components/cvs/ShareDialog.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { dashboard } from '@/routes';
+import { index as cvsIndex, edit as cvEdit } from '@/routes/cvs';
+import { type BreadcrumbItem } from '@/types';
 
 interface CvVersion {
     id: number;
     version_number: number;
     change_summary?: string;
     created_at: string;
+}
+
+interface Comment {
+    id: number;
+    content: string;
+    section: string | null;
+    guest_name: string | null;
+    created_at: string;
+    user?: {
+        name: string;
+    } | null;
+    share?: {
+        permission: string;
+    } | null;
 }
 
 interface Cv {
@@ -79,6 +96,7 @@ interface Cv {
     skills?: string[] | null;
     projects?: Array<{
         name: string;
+        title?: string;
         description?: string;
         url?: string;
         technologies?: string[];
@@ -96,6 +114,7 @@ interface Cv {
     ai_suggestions?: any | null;
     file_path?: string | null;
     versions: CvVersion[];
+    comments: Comment[];
     created_at: string;
     updated_at: string;
 }
@@ -115,6 +134,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 const isGeneratingSummary = ref(false);
 const isGettingSuggestions = ref(false);
 const suggestions = ref(props.cv.ai_suggestions);
+
+watch(() => props.cv.ai_suggestions, (newVal) => {
+    suggestions.value = newVal;
+});
+const { addToast } = useToast();
 
 const templateLabels: Record<string, string> = {
     modern: 'Modern',
@@ -166,7 +190,24 @@ const getSuggestions = async () => {
         const data = await response.json();
         if (data.success) {
             suggestions.value = data.suggestions;
+            addToast({
+                title: 'Success',
+                message: 'AI suggestions generated.',
+                type: 'success'
+            });
+        } else {
+            addToast({
+                title: 'Error',
+                message: data.message || 'Failed to generate suggestions.',
+                type: 'error'
+            });
         }
+    } catch (error) {
+        addToast({
+            title: 'Error',
+            message: 'A network error occurred.',
+            type: 'error'
+        });
     } finally {
         isGettingSuggestions.value = false;
     }
@@ -175,7 +216,7 @@ const getSuggestions = async () => {
 const generateSummary = async () => {
     isGeneratingSummary.value = true;
     try {
-        await fetch(`/cvs/${props.cv.id}/generate-summary`, {
+        const response = await fetch(`/cvs/${props.cv.id}/generate-summary`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -184,23 +225,65 @@ const generateSummary = async () => {
             },
             credentials: 'same-origin',
         });
-        router.reload({ only: ['cv'] });
+        const data = await response.json();
+        if (data.success) {
+            addToast({
+                title: 'Success',
+                message: 'Professional summary updated.',
+                type: 'success'
+            });
+            router.reload({ only: ['cv'] });
+        } else {
+             addToast({
+                title: 'Error',
+                message: data.message || 'Failed to generate summary.',
+                type: 'error'
+            });
+        }
+    } catch (error) {
+        addToast({
+            title: 'Error',
+            message: 'A network error occurred.',
+            type: 'error'
+        });
     } finally {
         isGeneratingSummary.value = false;
     }
 };
 
 const restoreVersion = async (versionId: number) => {
-    await fetch(`/cvs/${props.cv.id}/restore/${versionId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-XSRF-TOKEN': decodeURIComponent(document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1] || ''),
-        },
-        credentials: 'same-origin',
-    });
-    router.reload();
+    try {
+        const response = await fetch(`/cvs/${props.cv.id}/restore/${versionId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1] || ''),
+            },
+            credentials: 'same-origin',
+        });
+        const data = await response.json();
+        if (data.success) {
+            addToast({
+                title: 'Success',
+                message: 'Version restored successfully.',
+                type: 'success'
+            });
+            router.reload();
+        } else {
+            addToast({
+                title: 'Error',
+                message: data.message || 'Failed to restore version.',
+                type: 'error'
+            });
+        }
+    } catch (error) {
+        addToast({
+            title: 'Error',
+            message: 'A network error occurred.',
+            type: 'error'
+        });
+    }
 };
 
 const deleteCv = () => {
@@ -253,6 +336,7 @@ const deleteCv = () => {
                             </Button>
                         </a>
                     </div>
+                    <ShareDialog :cv-id="cv.id" />
                     <Button variant="outline" size="sm" as-child>
                         <Link :href="`/cvs/${cv.id}/edit`">
                             <Edit class="h-4 w-4 mr-2" />
@@ -501,7 +585,7 @@ const deleteCv = () => {
                                     <ul class="space-y-2 text-sm">
                                         <li v-for="(rec, index) in (suggestions.overall_recommendations || suggestions.recommendations)" :key="index" class="flex items-start gap-2">
                                             <Sparkles class="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                                            <span v-html="marked(rec)" class="prose prose-sm dark:prose-invert max-w-none"></span>
+                                            <span v-html="marked(typeof rec === 'string' ? rec : JSON.stringify(rec))" class="prose prose-sm dark:prose-invert max-w-none"></span>
                                         </li>
                                     </ul>
                                 </div>
@@ -519,6 +603,34 @@ const deleteCv = () => {
                                 <p class="text-sm text-muted-foreground">
                                     Click the refresh button to get AI suggestions for improving your CV.
                                 </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <!-- Feedback / Comments -->
+                    <Card v-if="cv.comments && cv.comments.length > 0">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <MessageSquare class="h-5 w-5 text-primary" />
+                                External Feedback
+                            </CardTitle>
+                            <CardDescription>Comments from shared links</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="space-y-4">
+                                <div v-for="comment in cv.comments" :key="comment.id" class="space-y-2 p-3 rounded-lg border bg-card/50">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-bold">{{ comment.user?.name || comment.guest_name || 'Guest' }}</span>
+                                            <Badge v-if="comment.share" variant="outline" class="text-[9px] h-4 uppercase">
+                                                {{ comment.share.permission }}
+                                            </Badge>
+                                        </div>
+                                        <span class="text-[10px] text-muted-foreground">{{ formatVersionDate(comment.created_at) }}</span>
+                                    </div>
+                                    <p class="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">{{ comment.content }}</p>
+                                    <Badge v-if="comment.section" variant="secondary" class="text-[9px] h-4"># {{ comment.section }}</Badge>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

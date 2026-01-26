@@ -1,9 +1,27 @@
 <script setup lang="ts">
-import { useToast } from '@/composables/useToast';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
+import { usePage } from '@inertiajs/vue3';
+import { useToast } from '@/composables/useToast';
 
-const { toasts, removeToast } = useToast();
+const { toasts, removeToast, addToast } = useToast();
+const page = usePage();
+
+// Watch for flash messages from Inertia
+watch(() => page.props.flash, (flash: any) => {
+    if (flash?.success) {
+        addToast({ type: 'success', message: flash.success, title: 'Success' });
+    }
+    if (flash?.error) {
+        addToast({ type: 'error', message: flash.error, title: 'Error' });
+    }
+    if (flash?.warning) {
+        addToast({ type: 'warning', message: flash.warning, title: 'Warning' });
+    }
+    if (flash?.info) {
+        addToast({ type: 'info', message: flash.info, title: 'Info' });
+    }
+}, { deep: true, immediate: true });
 
 const getIcon = (type: string) => {
     switch (type) {

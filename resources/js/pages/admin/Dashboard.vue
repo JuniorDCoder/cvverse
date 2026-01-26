@@ -1,51 +1,81 @@
 <script setup lang="ts">
-import { Head, usePage } from '@inertiajs/vue3';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Users, FileText, TrendingUp, Activity } from 'lucide-vue-next';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Users, FileText, TrendingUp, Activity, Mail, Briefcase, MessageSquare, Shield } from 'lucide-vue-next';
 import { computed } from 'vue';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import AppLayout from '@/layouts/AppLayout.vue';
 
+interface Props {
+    stats: {
+        total_users: number;
+        active_users: number;
+        total_cvs: number;
+        total_cover_letters: number;
+        total_applications: number;
+        total_chat_sessions: number;
+        users_today: number;
+        cvs_today: number;
+        applications_today: number;
+    };
+    recentUsers: Array<{
+        id: number;
+        name: string;
+        email: string;
+        role: string;
+        joined: string;
+        onboarding_completed: boolean;
+    }>;
+}
+
+const props = defineProps<Props>();
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 
-const stats = [
+const stats = computed(() => [
     {
         title: 'Total Users',
-        value: '1,234',
-        change: '+12%',
-        changeType: 'positive',
+        value: props.stats.total_users.toLocaleString(),
+        subtitle: `${props.stats.users_today} today`,
         icon: Users,
+        href: '/admin/users',
     },
     {
         title: 'CVs Created',
-        value: '5,678',
-        change: '+23%',
-        changeType: 'positive',
+        value: props.stats.total_cvs.toLocaleString(),
+        subtitle: `${props.stats.cvs_today} today`,
         icon: FileText,
+        href: '/admin/cvs',
     },
     {
-        title: 'Active Today',
-        value: '89',
-        change: '+5%',
-        changeType: 'positive',
+        title: 'Cover Letters',
+        value: props.stats.total_cover_letters.toLocaleString(),
+        subtitle: 'Total created',
+        icon: Mail,
+        href: '/admin/cover-letters',
+    },
+    {
+        title: 'Job Applications',
+        value: props.stats.total_applications.toLocaleString(),
+        subtitle: `${props.stats.applications_today} today`,
+        icon: Briefcase,
+        href: '/admin/applications',
+    },
+    {
+        title: 'Chat Sessions',
+        value: props.stats.total_chat_sessions.toLocaleString(),
+        subtitle: 'Total sessions',
+        icon: MessageSquare,
+        href: '/admin/chat-sessions',
+    },
+    {
+        title: 'Active Users',
+        value: props.stats.active_users.toLocaleString(),
+        subtitle: 'Completed onboarding',
         icon: Activity,
+        href: '/admin/users',
     },
-    {
-        title: 'Conversion Rate',
-        value: '12.5%',
-        change: '-2%',
-        changeType: 'negative',
-        icon: TrendingUp,
-    },
-];
-
-const recentUsers = [
-    { name: 'John Doe', email: 'john@example.com', joined: '2 hours ago', plan: 'Pro' },
-    { name: 'Jane Smith', email: 'jane@example.com', joined: '5 hours ago', plan: 'Free' },
-    { name: 'Mike Johnson', email: 'mike@example.com', joined: '1 day ago', plan: 'Enterprise' },
-    { name: 'Sarah Wilson', email: 'sarah@example.com', joined: '2 days ago', plan: 'Pro' },
-];
+]);
 </script>
 
 <template>
@@ -60,22 +90,21 @@ const recentUsers = [
             </div>
 
             <!-- Stats Grid -->
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Card v-for="stat in stats" :key="stat.title">
-                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">{{ stat.title }}</CardTitle>
-                        <component :is="stat.icon" class="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div class="text-2xl font-bold">{{ stat.value }}</div>
-                        <p class="text-xs text-muted-foreground">
-                            <span :class="stat.changeType === 'positive' ? 'text-green-500' : 'text-red-500'">
-                                {{ stat.change }}
-                            </span>
-                            from last month
-                        </p>
-                    </CardContent>
-                </Card>
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Link v-for="stat in stats" :key="stat.title" :href="stat.href" class="block">
+                    <Card class="hover:shadow-md transition-shadow cursor-pointer">
+                        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle class="text-sm font-medium">{{ stat.title }}</CardTitle>
+                            <component :is="stat.icon" class="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div class="text-2xl font-bold">{{ stat.value }}</div>
+                            <p class="text-xs text-muted-foreground mt-1">
+                                {{ stat.subtitle }}
+                            </p>
+                        </CardContent>
+                    </Card>
+                </Link>
             </div>
 
             <!-- Recent Users -->
@@ -86,27 +115,32 @@ const recentUsers = [
                 </CardHeader>
                 <CardContent>
                     <div class="space-y-4">
-                        <div 
-                            v-for="user in recentUsers" 
-                            :key="user.email"
-                            class="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                        <Link
+                            v-for="recentUser in recentUsers"
+                            :key="recentUser.id"
+                            :href="`/admin/users?search=${recentUser.email}`"
+                            class="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors block"
                         >
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white text-sm font-medium">
-                                    {{ user.name.split(' ').map(n => n[0]).join('') }}
+                                    {{ recentUser.name.split(' ').map((n: string) => n[0]).join('') }}
                                 </div>
                                 <div>
-                                    <p class="font-medium">{{ user.name }}</p>
-                                    <p class="text-sm text-muted-foreground">{{ user.email }}</p>
+                                    <p class="font-medium">{{ recentUser.name }}</p>
+                                    <p class="text-sm text-muted-foreground">{{ recentUser.email }}</p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <Badge :variant="user.plan === 'Free' ? 'secondary' : user.plan === 'Enterprise' ? 'default' : 'outline'">
-                                    {{ user.plan }}
+                                <Badge :variant="recentUser.role === 'admin' ? 'default' : 'secondary'">
+                                    <Shield v-if="recentUser.role === 'admin'" class="h-3 w-3 mr-1" />
+                                    {{ recentUser.role }}
                                 </Badge>
-                                <p class="text-xs text-muted-foreground mt-1">{{ user.joined }}</p>
+                                <p class="text-xs text-muted-foreground mt-1">{{ recentUser.joined }}</p>
                             </div>
-                        </div>
+                        </Link>
+                        <p v-if="recentUsers.length === 0" class="text-center py-8 text-muted-foreground">
+                            No users yet
+                        </p>
                     </div>
                 </CardContent>
             </Card>

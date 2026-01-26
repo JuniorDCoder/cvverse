@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { Link, router } from '@inertiajs/vue3';
+import { LogOut } from 'lucide-vue-next';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { Button } from '@/components/ui/button';
 import { home } from '@/routes';
-import { Link, router } from '@inertiajs/vue3';
-import { LogOut } from 'lucide-vue-next';
 
 defineProps<{
     title?: string;

@@ -2,14 +2,14 @@
 import { useForm } from '@inertiajs/vue3';
 import { Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import { services, pricing, about } from '@/routes';
-import LandingLayout from '@/layouts/LandingLayout.vue';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import LandingLayout from '@/layouts/LandingLayout.vue';
+import { services, pricing, about } from '@/routes';
 
 const isSubmitting = ref(false);
 const isSubmitted = ref(false);

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3';
 import { ref, onMounted, onUnmounted } from 'vue';
-import { home, about, services, pricing, contact, login, register, dashboard } from '@/routes';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useAppearance } from '@/composables/useAppearance';
-import { usePage } from '@inertiajs/vue3';
+import { home, about, services, pricing, contact, login, register, dashboard } from '@/routes';
 
 const props = defineProps<{
     title?: string;

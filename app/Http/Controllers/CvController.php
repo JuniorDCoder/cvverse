@@ -6,6 +6,7 @@ use App\Models\Cv;
 use App\Models\CvTemplate;
 use App\Models\JobApplication;
 use App\Services\GeminiService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,10 +14,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use Barryvdh\DomPDF\Facade\Pdf;
-use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
-use PhpOffice\PhpWord\Shared\Html;
+use PhpOffice\PhpWord\PhpWord;
 
 class CvController extends Controller
 {
@@ -79,7 +78,7 @@ class CvController extends Controller
         ]);
 
         // Create initial version
-        $cv->createVersion('Generated from Job Application: ' . $job->title);
+        $cv->createVersion('Generated from Job Application: '.$job->title);
 
         return redirect()->route('cvs.show', $cv)
             ->with('success', 'CV generated successfully!');
@@ -201,7 +200,7 @@ class CvController extends Controller
     {
         $this->authorize('view', $cv);
 
-        $cv->load('versions');
+        $cv->load(['versions', 'comments.user', 'comments.share']);
 
         return Inertia::render('cvs/Show', [
             'cv' => $cv,
@@ -473,6 +472,7 @@ class CvController extends Controller
         return redirect()->route('cvs.index')
             ->with('success', 'CV deleted successfully!');
     }
+
     /**
      * Chat with AI to edit CV
      */
@@ -498,11 +498,11 @@ class CvController extends Controller
 
         $result = $this->geminiService->chatWithCv($cvData, $validated['message'], $validated['history'] ?? []);
 
-        if (!$result) {
+        if (! $result) {
             return response()->json(['success' => false, 'message' => 'AI failed to respond.'], 500);
         }
 
-        if (!empty($result['updated_cv'])) {
+        if (! empty($result['updated_cv'])) {
             $cv->update([
                 'personal_info' => $result['updated_cv']['personal_info'] ?? $cv->personal_info,
                 'summary' => $result['updated_cv']['summary'] ?? $cv->summary,
@@ -519,7 +519,7 @@ class CvController extends Controller
             'success' => true,
             'message' => $result['message'],
             'updated_cv' => $cv->fresh(),
-            'changes_summary' => $result['changes_summary'] ?? null
+            'changes_summary' => $result['changes_summary'] ?? null,
         ]);
     }
 
@@ -529,9 +529,10 @@ class CvController extends Controller
     public function exportPdf(Cv $cv)
     {
         $this->authorize('view', $cv);
-        
+
         $pdf = Pdf::loadView('exports.cv-pdf', ['cv' => $cv]);
-        return $pdf->download($cv->name . '.pdf');
+
+        return $pdf->download($cv->name.'.pdf');
     }
 
     /**
@@ -540,18 +541,95 @@ class CvController extends Controller
     public function exportDocx(Cv $cv)
     {
         $this->authorize('view', $cv);
-        
-        $phpWord = new PhpWord();
+
+        $phpWord = new PhpWord;
         $section = $phpWord->addSection();
-        
-        $html = view('exports.cv-pdf', ['cv' => $cv])->render();
-        Html::addSection($section, $html);
-        
+
+        // Personal Info
+        $section->addText(
+            $cv->personal_info['full_name'] ?? '',
+            ['bold' => true, 'size' => 16]
+        );
+        $section->addText($cv->personal_info['email'] ?? '');
+        $section->addText($cv->personal_info['phone'] ?? '');
+        $section->addText($cv->personal_info['location'] ?? '');
+
+        // Summary
+        if ($cv->summary) {
+            $section->addTextBreak(1);
+            $section->addText('Summary', ['bold' => true, 'size' => 14]);
+            $section->addText($cv->summary);
+        }
+
+        // Experience
+        if ($cv->experience) {
+            $section->addTextBreak(1);
+            $section->addText('Experience', ['bold' => true, 'size' => 14]);
+
+            foreach ($cv->experience as $exp) {
+                $section->addTextBreak(1);
+                $section->addText($exp['title'] ?? '', ['bold' => true]);
+                $section->addText(($exp['company'] ?? '').' - '.($exp['location'] ?? ''));
+                $section->addText(
+                    ($exp['start_date'] ?? '').' - '.
+                    ($exp['current'] ? 'Present' : ($exp['end_date'] ?? ''))
+                );
+                $section->addText($exp['description'] ?? '');
+            }
+        }
+
+        // Education
+        if ($cv->education) {
+            $section->addTextBreak(1);
+            $section->addText('Education', ['bold' => true, 'size' => 14]);
+
+            foreach ($cv->education as $edu) {
+                $section->addTextBreak(1);
+                $section->addText($edu['degree'] ?? '', ['bold' => true]);
+                $section->addText($edu['institution'] ?? '');
+                $section->addText(
+                    ($edu['start_date'] ?? '').' - '.($edu['end_date'] ?? '')
+                );
+            }
+        }
+
+        // Skills
+        if ($cv->skills) {
+            $section->addTextBreak(1);
+            $section->addText('Skills', ['bold' => true, 'size' => 14]);
+            $section->addText(implode(', ', $cv->skills));
+        }
+
+        // Projects
+        if ($cv->projects) {
+            $section->addTextBreak(1);
+            $section->addText('Projects', ['bold' => true, 'size' => 14]);
+
+            foreach ($cv->projects as $project) {
+                $section->addTextBreak(1);
+                $section->addText($project['title'] ?? '', ['bold' => true]);
+                $section->addText($project['description'] ?? '');
+            }
+        }
+
+        // Languages
+        if ($cv->languages) {
+            $section->addTextBreak(1);
+            $section->addText('Languages', ['bold' => true, 'size' => 14]);
+
+            foreach ($cv->languages as $lang) {
+                $section->addText(
+                    ($lang['language'] ?? '').' - '.
+                    ucfirst($lang['proficiency'] ?? '')
+                );
+            }
+        }
+
         $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
-        
+
         $tempFile = tempnam(sys_get_temp_dir(), 'cv');
         $objWriter->save($tempFile);
-        
-        return response()->download($tempFile, $cv->name . '.docx')->deleteFileAfterSend(true);
+
+        return response()->download($tempFile, $cv->name.'.docx')->deleteFileAfterSend(true);
     }
 }

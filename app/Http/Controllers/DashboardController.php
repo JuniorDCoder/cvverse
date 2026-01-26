@@ -16,8 +16,13 @@ class DashboardController extends Controller
         private readonly GeminiService $geminiService
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        // Redirect admins to admin dashboard
+        if ($request->user()?->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+
         $user = Auth::user();
 
         // Get recent job applications

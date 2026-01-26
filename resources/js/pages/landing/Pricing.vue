@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import { register, contact, services } from '@/routes';
-import LandingLayout from '@/layouts/LandingLayout.vue';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import LandingLayout from '@/layouts/LandingLayout.vue';
+import { register, contact, services } from '@/routes';
 
 const billingCycle = ref<'monthly' | 'yearly'>('monthly');
 
