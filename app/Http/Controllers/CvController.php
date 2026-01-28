@@ -142,7 +142,7 @@ class CvController extends Controller
         // Create initial version
         $cv->createVersion('Initial version');
 
-        return redirect()->route('cvs.edit', $cv)
+        return redirect()->route('cvs.show', $cv)
             ->with('success', 'CV created successfully!');
     }
 
@@ -262,11 +262,7 @@ class CvController extends Controller
 
         $cv->update($validated);
 
-        if ($request->wantsJson()) {
-            return response()->json(['success' => true, 'cv' => $cv->fresh()]);
-        }
-
-        return redirect()->route('cvs.edit', $cv)
+        return redirect()->route('cvs.show', $cv)
             ->with('success', 'CV updated successfully!');
     }
 

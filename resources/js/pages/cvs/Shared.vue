@@ -80,6 +80,7 @@ const isSendingComment = ref(false);
 const newComment = ref('');
 const activeSection = ref<string | null>(null);
 const guestName = ref('');
+const showMobileFeedback = ref(false);
 
 const canEdit = computed(() => props.share.permission === 'edit');
 const canComment = computed(() => props.share.permission === 'review' || props.share.permission === 'edit');
@@ -198,6 +199,16 @@ const sortedComments = computed(() => {
                     <Shield class="h-3 w-3" />
                     Shared with {{ share.permission }} permission
                 </span>
+                <Button 
+                    v-if="canComment" 
+                    variant="ghost" 
+                    size="sm" 
+                    @click="showMobileFeedback = !showMobileFeedback" 
+                    class="lg:hidden h-7 text-primary-foreground hover:bg-primary-foreground/10"
+                >
+                    <MessageSquare class="h-3 w-3 mr-1" />
+                    {{ showMobileFeedback ? 'Hide' : 'Show' }} Feedback
+                </Button>
             </div>
             <div v-if="canEdit" class="flex items-center gap-2">
                 <Button v-if="!isEditing" variant="secondary" size="xs" @click="isEditing = true" class="h-7 px-3">
@@ -314,7 +325,14 @@ const sortedComments = computed(() => {
             </main>
 
             <!-- Sidebar: Comments (Review Mode) -->
-            <aside v-if="canComment" class="w-80 border-l bg-white dark:bg-zinc-900 flex flex-col hidden lg:flex shadow-2xl relative z-10">
+            <aside 
+                v-if="canComment" 
+                :class="[
+                    'w-80 border-l bg-white dark:bg-zinc-900 flex flex-col shadow-2xl relative z-10 transition-all duration-300',
+                    'lg:flex fixed inset-y-0 right-0 lg:relative lg:translate-x-0',
+                    showMobileFeedback ? 'translate-x-0 flex' : 'translate-x-full hidden lg:flex'
+                ]"
+            >
                 <div class="p-6 border-b">
                     <h3 class="font-bold flex items-center gap-2">
                         <MessageSquare class="h-5 w-5 text-primary" />

@@ -76,7 +76,7 @@ class CoverLetterController extends Controller
                 ->update(['cover_letter_id' => $coverLetter->id]);
         }
 
-        return redirect()->route('cover-letters.edit', $coverLetter)
+        return redirect()->route('cover-letters.show', $coverLetter)
             ->with('success', 'Cover letter created successfully!');
     }
 
@@ -220,10 +220,6 @@ class CoverLetterController extends Controller
         ]);
 
         $coverLetter->update($validated);
-
-        if ($request->wantsJson()) {
-            return response()->json(['success' => true, 'coverLetter' => $coverLetter->fresh()]);
-        }
 
         return redirect()->route('cover-letters.show', $coverLetter)
             ->with('success', 'Cover letter updated successfully!');

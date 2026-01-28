@@ -82,9 +82,6 @@ class GeminiService
         }
     }
 
-    /**
-     * Extract text from Gemini response
-     */
     public function extractText(?array $response): ?string
     {
         if (! $response) {
@@ -92,6 +89,37 @@ class GeminiService
         }
 
         return $response['candidates'][0]['content']['parts'][0]['text'] ?? null;
+    }
+
+    /**
+     * Robustly parse JSON from AI response
+     */
+    private function parseJsonResponse(?string $text): ?array
+    {
+        if (! $text) {
+            return null;
+        }
+
+        // Try to find JSON block in markdown
+        if (preg_match('/```json\s*(\{.*\}|\[.*\])\s*```/s', $text, $matches)) {
+            $text = $matches[1];
+        } elseif (preg_match('/(\{.*\}|\[.*\])/s', $text, $matches)) {
+            // Try to find anything that looks like a JSON object or array
+            $text = $matches[1];
+        }
+
+        $text = trim($text);
+
+        try {
+            return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            Log::error('Failed to parse Gemini JSON response', [
+                'error' => $e->getMessage(),
+                'text' => $text
+            ]);
+
+            return null;
+        }
     }
 
     /**
@@ -122,22 +150,7 @@ PROMPT;
         $response = $this->generateContent($prompt);
         $text = $this->extractText($response);
 
-        if (! $text) {
-            return null;
-        }
-
-        // Clean up the response - remove markdown code blocks if present
-        $text = preg_replace('/```json\s*/', '', $text);
-        $text = preg_replace('/```\s*/', '', $text);
-        $text = trim($text);
-
-        try {
-            return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            Log::error('Failed to parse Gemini job analysis response', ['text' => $text]);
-
-            return null;
-        }
+        return $this->parseJsonResponse($text);
     }
 
     /**
@@ -168,21 +181,7 @@ PROMPT;
         $response = $this->generateContent($prompt);
         $text = $this->extractText($response);
 
-        if (! $text) {
-            return null;
-        }
-
-        $text = preg_replace('/```json\s*/', '', $text);
-        $text = preg_replace('/```\s*/', '', $text);
-        $text = trim($text);
-
-        try {
-            return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            Log::error('Failed to parse Gemini company research response', ['text' => $text]);
-
-            return null;
-        }
+        return $this->parseJsonResponse($text);
     }
 
     /**
@@ -227,21 +226,7 @@ PROMPT;
         $response = $this->generateContent($prompt, [], $filePath);
         $text = $this->extractText($response);
 
-        if (! $text) {
-            return null;
-        }
-
-        $text = preg_replace('/```json\s*/', '', $text);
-        $text = preg_replace('/```\s*/', '', $text);
-        $text = trim($text);
-
-        try {
-            return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            Log::error('Failed to parse Gemini CV suggestions response', ['text' => $text]);
-
-            return null;
-        }
+        return $this->parseJsonResponse($text);
     }
 
     /**
@@ -320,21 +305,7 @@ PROMPT;
         $response = $this->generateContent($prompt);
         $text = $this->extractText($response);
 
-        if (! $text) {
-            return null;
-        }
-
-        $text = preg_replace('/```json\s*/', '', $text);
-        $text = preg_replace('/```\s*/', '', $text);
-        $text = trim($text);
-
-        try {
-            return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            Log::error('Failed to parse Gemini cover letter improvement response', ['text' => $text]);
-
-            return null;
-        }
+        return $this->parseJsonResponse($text);
     }
 
     /**
@@ -399,21 +370,7 @@ PROMPT;
         $response = $this->generateContent($prompt);
         $text = $this->extractText($response);
 
-        if (! $text) {
-            return null;
-        }
-
-        $text = preg_replace('/```json\s*/', '', $text);
-        $text = preg_replace('/```\s*/', '', $text);
-        $text = trim($text);
-
-        try {
-            return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            Log::error('Failed to parse Gemini section rewrite response', ['text' => $text]);
-
-            return null;
-        }
+        return $this->parseJsonResponse($text);
     }
 
     /**
@@ -491,21 +448,7 @@ PROMPT;
         $response = $this->generateContent($prompt);
         $text = $this->extractText($response);
 
-        if (! $text) {
-            return null;
-        }
-
-        $text = preg_replace('/```json\s*/', '', $text);
-        $text = preg_replace('/```\s*/', '', $text);
-        $text = trim($text);
-
-        try {
-            return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            Log::error('Failed to parse Gemini CV generation response', ['text' => $text]);
-
-            return null;
-        }
+        return $this->parseJsonResponse($text);
     }
 
     /**
@@ -547,21 +490,7 @@ PROMPT;
         $response = $this->generateContent($prompt);
         $text = $this->extractText($response);
 
-        if (! $text) {
-            return null;
-        }
-
-        $text = preg_replace('/```json\s*/', '', $text);
-        $text = preg_replace('/```\s*/', '', $text);
-        $text = trim($text);
-
-        try {
-            return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            Log::error('Failed to parse Gemini chat response', ['text' => $text]);
-
-            return null;
-        }
+        return $this->parseJsonResponse($text);
     }
 
     /**
@@ -596,21 +525,7 @@ PROMPT;
         $response = $this->generateContent($prompt, [], $filePath);
         $text = $this->extractText($response);
 
-        if (! $text) {
-            return null;
-        }
-
-        $text = preg_replace('/```json\s*/', '', $text);
-        $text = preg_replace('/```\s*/', '', $text);
-        $text = trim($text);
-
-        try {
-            return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            Log::error('Failed to parse Gemini generic chat response', ['text' => $text]);
-
-            return null;
-        }
+        return $this->parseJsonResponse($text);
     }
 
     /**
@@ -655,20 +570,6 @@ PROMPT;
         $response = $this->generateContent($prompt);
         $text = $this->extractText($response);
 
-        if (! $text) {
-            return null;
-        }
-
-        $text = preg_replace('/```json\s*/', '', $text);
-        $text = preg_replace('/```\s*/', '', $text);
-        $text = trim($text);
-
-        try {
-            return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            Log::error("Failed to parse Gemini {$resourceType} chat response", ['text' => $text]);
-
-            return null;
-        }
+        return $this->parseJsonResponse($text);
     }
 }
