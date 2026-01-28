@@ -185,7 +185,11 @@ const copyToClipboard = async (content?: string) => {
                                     <Mail class="h-6 w-6 text-primary" />
                                 </div>
                                 <div>
-                                    <CardTitle class="text-lg">{{ letter.name }}</CardTitle>
+                                    <CardTitle class="text-lg">
+                                        <Link :href="`/cover-letters/${letter.id}`" class="hover:text-primary transition-colors">
+                                            {{ letter.name }}
+                                        </Link>
+                                    </CardTitle>
                                     <Badge :class="toneColors[letter.tone]" class="mt-1">
                                         {{ toneLabels[letter.tone] }}
                                     </Badge>
@@ -193,7 +197,7 @@ const copyToClipboard = async (content?: string) => {
                             </div>
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
-                                    <Button variant="ghost" size="icon" class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button variant="ghost" size="icon" class="md:opacity-0 group-hover:opacity-100 transition-opacity text-foreground">
                                         <MoreVertical class="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>

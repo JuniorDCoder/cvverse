@@ -15,6 +15,7 @@ class CvComment extends Model
         'cv_share_id',
         'user_id',
         'guest_name',
+        'guest_email',
         'content',
         'section',
     ];

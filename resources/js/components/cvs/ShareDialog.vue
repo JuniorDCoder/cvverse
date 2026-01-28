@@ -175,7 +175,7 @@ onMounted(() => {
                 Share
             </Button>
         </DialogTrigger>
-        <DialogContent class="sm:max-w-[500px]">
+        <DialogContent class="max-w-[calc(100vw-2rem)] sm:max-w-[500px]">
             <DialogHeader>
                 <DialogTitle>Share CV</DialogTitle>
                 <DialogDescription>
@@ -186,7 +186,7 @@ onMounted(() => {
             <div class="space-y-6 py-4">
                 <!-- Create New Share -->
                 <div class="grid gap-4 p-4 border rounded-lg bg-muted/30">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <Label>Permission</Label>
                             <Select v-model="newShare.permission">
@@ -249,7 +249,7 @@ onMounted(() => {
                                             Expires: {{ formatDate(share.expires_at) }}
                                         </span>
                                     </div>
-                                    <p class="text-xs font-mono truncate max-w-[300px] text-muted-foreground bg-muted p-1 rounded">
+                                    <p class="text-[10px] font-mono break-all text-muted-foreground bg-muted p-1.5 rounded-md border leading-relaxed">
                                         {{ getFullUrl(share.token) }}
                                     </p>
                                 </div>

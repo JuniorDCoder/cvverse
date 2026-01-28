@@ -317,7 +317,7 @@ const deleteCv = () => {
                         </p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 ml-12 lg:ml-0">
+                <div class="flex items-center gap-2 flex-wrap ml-12 lg:ml-0">
                     <Button v-if="cv.file_path" variant="outline" size="sm">
                         <Download class="h-4 w-4 mr-2" />
                         Download
@@ -589,10 +589,10 @@ const deleteCv = () => {
                                         </li>
                                     </ul>
                                 </div>
-                                <div v-if="suggestions.skills_to_add?.length" class="space-y-2 pt-2 border-t">
+                                <div v-if="suggestions.skills_to_add?.length" class="space-y-2 pt-2 border-t max-w-full overflow-hidden">
                                     <h4 class="font-semibold text-sm text-green-600">Skills to Add</h4>
-                                    <div class="flex flex-wrap gap-1">
-                                        <Badge v-for="skill in suggestions.skills_to_add" :key="skill" variant="outline" class="text-xs bg-green-50 border-green-200 text-green-700">
+                                    <div class="flex flex-wrap gap-1 max-w-full">
+                                        <Badge v-for="skill in suggestions.skills_to_add" :key="skill" variant="outline" class="text-xs bg-green-50 border-green-200 text-green-700 whitespace-normal break-words">
                                             + {{ skill }}
                                         </Badge>
                                     </div>

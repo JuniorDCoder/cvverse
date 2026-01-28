@@ -80,6 +80,7 @@ const isSendingComment = ref(false);
 const newComment = ref('');
 const activeSection = ref<string | null>(null);
 const guestName = ref('');
+const guestEmail = ref('');
 const showMobileFeedback = ref(false);
 
 const canEdit = computed(() => props.share.permission === 'edit');
@@ -141,6 +142,7 @@ const sendComment = async () => {
                 content: newComment.value,
                 section: activeSection.value,
                 guest_name: guestName.value || 'Guest',
+                guest_email: guestEmail.value,
             }),
         });
         const data = await response.json();
@@ -211,16 +213,16 @@ const sortedComments = computed(() => {
                 </Button>
             </div>
             <div v-if="canEdit" class="flex items-center gap-2">
-                <Button v-if="!isEditing" variant="secondary" size="xs" @click="isEditing = true" class="h-7 px-3">
+                <Button v-if="!isEditing" variant="secondary" size="sm" @click="isEditing = true" class="h-7 px-3">
                     Edit CV
                 </Button>
                 <div v-else class="flex items-center gap-2">
-                    <Button variant="secondary" size="xs" @click="saveChanges" :disabled="isSaving" class="h-7 px-3">
+                    <Button variant="secondary" size="sm" @click="saveChanges" :disabled="isSaving" class="h-7 px-3">
                         <Loader2 v-if="isSaving" class="h-3 w-3 mr-1 animate-spin" />
                         <Save v-else class="h-3 w-3 mr-1" />
                         Save Changes
                     </Button>
-                    <Button variant="ghost" size="xs" @click="isEditing = false" class="h-7 text-primary-foreground hover:bg-primary-foreground/10">
+                    <Button variant="ghost" size="sm" @click="isEditing = false" class="h-7 text-primary-foreground hover:bg-primary-foreground/10">
                         Cancel
                     </Button>
                 </div>
@@ -348,6 +350,9 @@ const sortedComments = computed(() => {
                             <div v-if="!auth?.user" class="space-y-2">
                                 <Label class="text-[10px] uppercase tracking-wider text-muted-foreground">Your Name</Label>
                                 <Input v-model="guestName" placeholder="Guest Name" size="sm" class="h-8 text-xs" />
+                                
+                                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mt-2 inline-block">Your Email (for notification)</Label>
+                                <Input v-model="guestEmail" type="email" placeholder="email@example.com" size="sm" class="h-8 text-xs" />
                             </div>
                             <div class="space-y-2">
                                 <Label class="text-[10px] uppercase tracking-wider text-muted-foreground">Comment</Label>

@@ -259,7 +259,7 @@ const formatMarkdown = (text: string) => {
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 ml-12 lg:ml-0">
+                <div class="flex items-center gap-2 flex-wrap ml-12 lg:ml-0">
                     <a
                         v-if="application.source_url"
                         :href="application.source_url"
@@ -420,10 +420,10 @@ const formatMarkdown = (text: string) => {
                                 <Separator />
 
                                 <!-- Skills to Add -->
-                                <div v-if="analysis.skills_to_add?.length">
+                                <div v-if="analysis.skills_to_add?.length" class="max-w-full overflow-hidden">
                                     <h4 class="font-semibold mb-2">Skills to Highlight</h4>
-                                    <div class="flex flex-wrap gap-2">
-                                        <Badge v-for="skill in analysis.skills_to_add" :key="skill" variant="outline" class="border-primary text-primary">
+                                    <div class="flex flex-wrap gap-2 max-w-full">
+                                        <Badge v-for="skill in analysis.skills_to_add" :key="skill" variant="outline" class="border-primary text-primary whitespace-normal break-words">
                                             + {{ skill }}
                                         </Badge>
                                     </div>

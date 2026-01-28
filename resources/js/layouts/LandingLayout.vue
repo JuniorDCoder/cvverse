@@ -150,7 +150,7 @@ onUnmounted(() => {
                                 </svg>
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="right" class="w-[300px] sm:w-[350px]">
+                        <SheetContent side="right" class="w-[300px] sm:w-[350px] p-6 flex flex-col">
                             <div class="flex flex-col h-full">
                                 <div class="flex items-center justify-between mb-8">
                                     <Link :href="home()" class="flex items-center space-x-2">
@@ -159,11 +159,11 @@ onUnmounted(() => {
                                     </Link>
                                 </div>
                                 
-                                <nav class="flex flex-col space-y-1">
+                                <nav class="flex flex-col space-y-4">
                                     <SheetClose as-child v-for="link in navLinks" :key="link.path">
                                         <Link
                                             :href="link.href()"
-                                            class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors"
+                                            class="flex items-center px-4 py-3 text-lg font-medium rounded-lg transition-colors"
                                             :class="[
                                                 isActive(link.path) 
                                                     ? 'bg-accent text-foreground' 
@@ -175,9 +175,9 @@ onUnmounted(() => {
                                     </SheetClose>
                                 </nav>
                                 
-                                <Separator class="my-6" />
+                                <Separator class="my-8" />
                                 
-                                <div class="flex flex-col gap-3">
+                                <div class="flex flex-col gap-4">
                                     <template v-if="!$page.props.auth.user">
                                         <SheetClose as-child>
                                             <Button variant="outline" as-child class="w-full">

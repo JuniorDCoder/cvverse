@@ -10,6 +10,9 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\CommentReceived;
+use App\Mail\CommentConfirmation;
 
 class CvShareController extends Controller
 {
@@ -88,15 +91,30 @@ class CvShareController extends Controller
             'content' => 'required|string',
             'section' => 'nullable|string',
             'guest_name' => 'nullable|string|max:255',
+            'guest_email' => 'nullable|email|max:255',
         ]);
 
         $comment = $share->cv->comments()->create([
             'cv_share_id' => $share->id,
             'user_id' => auth()->id(),
             'guest_name' => auth()->check() ? null : ($validated['guest_name'] ?? 'Guest'),
+            'guest_email' => auth()->check() ? auth()->user()->email : ($validated['guest_email'] ?? null),
             'content' => $validated['content'],
             'section' => $validated['section'],
         ]);
+
+        // Send Notifications
+        try {
+            // Notify CV Owner
+            Mail::to($share->cv->user->email)->send(new CommentReceived($comment));
+
+            // Notify Commenter
+            if ($comment->guest_email) {
+                Mail::to($comment->guest_email)->send(new CommentConfirmation($comment));
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to send comment notifications: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,

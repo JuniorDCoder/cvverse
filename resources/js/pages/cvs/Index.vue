@@ -204,12 +204,14 @@ const setPrimary = async (id: number) => {
                                     <FileText class="h-6 w-6 text-primary" />
                                 </div>
                                 <div>
-                                    <CardTitle class="text-lg flex items-center gap-2">
-                                        {{ cv.name }}
-                                        <Star
-                                            v-if="cv.is_primary"
-                                            class="h-4 w-4 text-yellow-500 fill-yellow-500"
-                                        />
+                                    <CardTitle class="text-lg">
+                                        <Link :href="`/cvs/${cv.id}`" class="flex items-center gap-2 hover:text-primary transition-colors">
+                                            {{ cv.name }}
+                                            <Star
+                                                v-if="cv.is_primary"
+                                                class="h-4 w-4 text-yellow-500 fill-yellow-500"
+                                            />
+                                        </Link>
                                     </CardTitle>
                                     <Badge :class="templateColors[cv.template]" class="mt-1">
                                         {{ templateLabels[cv.template] }}
@@ -218,7 +220,7 @@ const setPrimary = async (id: number) => {
                             </div>
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
-                                    <Button variant="ghost" size="icon" class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button variant="ghost" size="icon" class="md:opacity-0 group-hover:opacity-100 transition-opacity text-foreground">
                                         <MoreVertical class="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
