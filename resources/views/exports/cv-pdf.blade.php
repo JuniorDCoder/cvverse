@@ -169,10 +169,39 @@
                     <div class="item-header">
                         <span class="item-title">{{ $project['name'] ?? $project['title'] ?? 'Project' }}</span>
                     </div>
-                     @if(isset($project['url']))
+                    @if(isset($project['url']))
                         <div class="item-subtitle">{{ $project['url'] }}</div>
                     @endif
                     <p>{!! nl2br(e($project['description'] ?? '')) !!}</p>
+                    @if(!empty($project['technologies']))
+                        <ul class="skills-list" style="margin-top: 5px;">
+                            @foreach($project['technologies'] as $tech)
+                                <li class="skill-item">{{ $tech }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    @if(!empty($cv->certifications))
+        <div class="section">
+            <div class="section-title">Certifications</div>
+            @foreach($cv->certifications as $cert)
+                <div class="item">
+                    <div class="item-header">
+                        <span class="item-title">{{ $cert['name'] ?? 'Certification' }}</span>
+                        @if(isset($cert['date']))
+                            <span class="item-date">{{ $cert['date'] }}</span>
+                        @endif
+                    </div>
+                    @if(isset($cert['issuer']))
+                        <div class="item-subtitle">{{ $cert['issuer'] }}</div>
+                    @endif
+                    @if(isset($cert['url']))
+                        <p style="font-size: 10px; color: #666;">{{ $cert['url'] }}</p>
+                    @endif
                 </div>
             @endforeach
         </div>

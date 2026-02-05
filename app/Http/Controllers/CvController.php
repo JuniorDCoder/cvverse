@@ -165,17 +165,46 @@ class CvController extends Controller
             $request->user()->cvs()->where('is_primary', true)->update(['is_primary' => false]);
         }
 
+        // Attempt to extract structured data from the uploaded file using GeminiService
+        $extracted = null;
+        try {
+            $extracted = $this->geminiService->generateCvSuggestions([
+                // Empty initial data, just parse the file
+            ], [], $path);
+        } catch (\Throwable $e) {
+            $extracted = null;
+        }
+
+        $personal_info = $extracted['personal_info'] ?? null;
+        $experience = $extracted['experience'] ?? null;
+        $education = $extracted['education'] ?? null;
+        $skills = $extracted['skills'] ?? null;
+        $projects = $extracted['projects'] ?? null;
+        $certifications = $extracted['certifications'] ?? null;
+        $languages = $extracted['languages'] ?? null;
+        $summary = $extracted['summary'] ?? null;
+        $ai_suggestions = $extracted['ai_suggestions'] ?? null;
+
         $cv = $request->user()->cvs()->create([
             'name' => $request->name,
             'template' => $request->template,
             'is_primary' => $request->boolean('is_primary'),
             'file_path' => $path,
+            'personal_info' => $personal_info,
+            'experience' => $experience,
+            'education' => $education,
+            'skills' => $skills,
+            'projects' => $projects,
+            'certifications' => $certifications,
+            'languages' => $languages,
+            'summary' => $summary,
+            'ai_suggestions' => $ai_suggestions,
         ]);
 
         return response()->json([
             'success' => true,
             'cv' => $cv,
-            'message' => 'CV uploaded successfully!',
+            'message' => 'CV uploaded and parsed successfully!',
         ]);
     }
 
@@ -618,6 +647,23 @@ class CvController extends Controller
                     ($lang['language'] ?? '').' - '.
                     ucfirst($lang['proficiency'] ?? '')
                 );
+            }
+        }
+
+        // Certifications
+        if ($cv->certifications) {
+            $section->addTextBreak(1);
+            $section->addText('Certifications', ['bold' => true, 'size' => 14]);
+
+            foreach ($cv->certifications as $cert) {
+                $section->addTextBreak(1);
+                $section->addText($cert['name'] ?? '', ['bold' => true]);
+                if (! empty($cert['issuer'])) {
+                    $section->addText($cert['issuer']);
+                }
+                if (! empty($cert['date'])) {
+                    $section->addText($cert['date'], ['size' => 10, 'color' => '666666']);
+                }
             }
         }
 

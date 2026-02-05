@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\ChatSession;
-use App\Models\ChatMessage;
+use App\Models\CoverLetter;
 use App\Models\Cv;
 use App\Models\JobApplication;
-use App\Models\CoverLetter;
 use App\Services\GeminiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +16,35 @@ class AiChatController extends Controller
     public function __construct(
         private readonly GeminiService $geminiService
     ) {}
+
+    /**
+     * General AI chat endpoint for /ai-chat page (no session, just message and history)
+     */
+    public function chat(Request $request): JsonResponse
+    {
+        $request->validate([
+            'message' => 'required|string',
+            'history' => 'nullable|array',
+        ]);
+
+        $result = $this->geminiService->chatWithAi(
+            $request->input('message'),
+            $request->input('history', []),
+            null
+        );
+
+        if (! $result || empty($result['message'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'AI failed to respond.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['message'],
+        ]);
+    }
 
     public function index(): JsonResponse
     {
@@ -145,10 +173,38 @@ class AiChatController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('AI Chat Error:', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['success' => false, 'message' => 'Server error: ' . $e->getMessage()], 500);
+
+            return response()->json(['success' => false, 'message' => 'Server error: '.$e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Return persistent chat history for the current user for the AI chat page.
+     */
+    public function history(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $messages = [];
+        $session = $user->chatSessions()
+            ->where('context_type', 'general')
+            ->latest()
+            ->first();
+        if ($session) {
+            $messages = $session->messages()->orderBy('created_at', 'asc')->get()->map(function ($msg) {
+                return [
+                    'role' => $msg->role,
+                    'content' => $msg->content,
+                    'media_path' => $msg->media_path,
+                ];
+            })->toArray();
+        }
+
+        return response()->json([
+            'success' => true,
+            'history' => $messages,
+        ]);
     }
 
     public function destroy(ChatSession $session): JsonResponse

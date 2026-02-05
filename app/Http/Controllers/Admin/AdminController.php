@@ -264,12 +264,34 @@ class AdminController extends Controller
     /**
      * Show templates management.
      */
-    public function templates(): Response
+    public function templates(Request $request): Response
     {
-        $templates = CvTemplate::latest()->get();
+        $query = CvTemplate::query();
+
+        // Search filter
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Category filter
+        if ($category = $request->input('category')) {
+            $query->where('category', $category);
+        }
+
+        // Status filter
+        if ($status = $request->input('status')) {
+            $query->where('is_active', $status === 'active');
+        }
+
+        $templates = $query->latest()->paginate(12)->withQueryString();
 
         return Inertia::render('admin/Templates', [
             'templates' => $templates,
+            'categories' => CvTemplate::categories(),
+            'filters' => $request->only(['search', 'category', 'status']),
         ]);
     }
 
@@ -333,6 +355,8 @@ class AdminController extends Controller
      */
     public function settings(): Response
     {
-        return Inertia::render('admin/Settings');
+        return Inertia::render('admin/Settings', [
+            'settings' => \App\Models\SiteSetting::getAllForAdmin(),
+        ]);
     }
 }

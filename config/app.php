@@ -16,6 +16,11 @@ return [
     'name' => env('APP_NAME', 'Laravel'),
 
     /*
+     * Default Country for GeoLocation (Dev/Fallback)
+     */
+    'default_country' => env('APP_DEFAULT_COUNTRY', 'CM'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------

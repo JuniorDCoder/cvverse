@@ -25,6 +25,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { dashboard } from '@/routes';
 import { index as coverLettersIndex } from '@/routes/cover-letters';
 import { index as cvsIndex, create as cvCreate } from '@/routes/cvs';
+import { index as aiCvGeneratorIndex } from '@/routes/ai-cv-generator';
 import { index as jobsIndex, create as jobCreate } from '@/routes/jobs';
 import { type BreadcrumbItem } from '@/types';
 
@@ -120,6 +121,12 @@ const greeting = computed(() => {
                     </p>
                 </div>
                 <div class="flex gap-3">
+                    <Button as-child class="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg shadow-purple-500/25">
+                        <Link :href="aiCvGeneratorIndex().url">
+                            <Sparkles class="h-4 w-4 mr-2" />
+                            Generate CV with AI
+                        </Link>
+                    </Button>
                     <Button as-child>
                         <Link :href="jobCreate().url">
                             <Plus class="h-4 w-4 mr-2" />
@@ -290,6 +297,21 @@ const greeting = computed(() => {
                             </CardTitle>
                         </CardHeader>
                         <CardContent class="space-y-3">
+                            <!-- AI CV Generator - Featured -->
+                            <Link
+                                :href="aiCvGeneratorIndex().url"
+                                class="flex items-center gap-3 p-3 rounded-lg border-2 border-primary/50 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30 hover:border-primary transition-all group"
+                            >
+                                <div class="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 text-white">
+                                    <Sparkles class="h-4 w-4" />
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-medium group-hover:text-primary transition-colors">Generate CV with AI</p>
+                                    <p class="text-xs text-muted-foreground">Describe yourself and let AI create your CV</p>
+                                </div>
+                                <ArrowRight class="h-4 w-4 text-primary group-hover:translate-x-1 transition-all" />
+                            </Link>
+
                             <Link
                                 :href="jobCreate().url"
                                 class="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 hover:border-primary/50 transition-all group"

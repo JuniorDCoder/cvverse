@@ -1,36 +1,47 @@
 <?php
 
+use App\Http\Controllers\Admin\TemplateBuilderController;
+use App\Http\Controllers\AiCvGeneratorController;
 use App\Http\Controllers\CoverLetterController;
 use App\Http\Controllers\CvController;
 use App\Http\Controllers\CvShareController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JobApplicationController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use Laravel\Fortify\Features;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
-    ]);
-})->name('home');
+Route::get('/', [LandingController::class, 'welcome'])->name('home');
 
-Route::get('/about', function () {
-    return Inertia::render('landing/About');
-})->name('about');
+Route::get('/about', [LandingController::class, 'about'])->name('about');
 
-Route::get('/services', function () {
-    return Inertia::render('landing/Services');
-})->name('services');
+Route::get('/services', [LandingController::class, 'services'])->name('services');
 
-Route::get('/pricing', function () {
-    return Inertia::render('landing/Pricing');
-})->name('pricing');
+Route::get('/pricing', [LandingController::class, 'pricing'])->name('pricing');
 
-Route::get('/contact', function () {
-    return Inertia::render('landing/Contact');
-})->name('contact');
+Route::get('/payment/checkout/{plan}', [\App\Http\Controllers\PaymentController::class, 'checkout'])
+    ->name('payment.checkout')
+    ->middleware('auth');
+
+Route::post('/payment/process/{plan}', [\App\Http\Controllers\PaymentController::class, 'process'])
+    ->name('payment.process')
+    ->middleware('auth');
+
+Route::get('/contact', [LandingController::class, 'contact'])->name('contact');
+
+// Public Template Routes
+Route::prefix('templates')->name('templates.')->group(function () {
+    Route::get('/', [TemplateController::class, 'index'])->name('index');
+    Route::get('/{template}', [TemplateController::class, 'show'])->name('show');
+    Route::get('/{template}/editor', [TemplateController::class, 'editor'])->name('editor');
+    Route::get('/{template}/preview', [TemplateController::class, 'preview'])->name('preview');
+    Route::post('/{template}/preview', [TemplateController::class, 'previewWithData'])->name('preview.with-data');
+    Route::get('/{template}/download', [TemplateController::class, 'download'])->name('download');
+    Route::post('/{template}/save-as-cv', [TemplateController::class, 'saveAsCv'])
+        ->middleware(['auth', 'verified'])
+        ->name('save-as-cv');
+});
 
 // Onboarding routes (for authenticated & verified users who haven't completed onboarding)
 Route::middleware(['auth', 'verified'])->prefix('onboarding')->name('onboarding.')->group(function () {
@@ -45,6 +56,22 @@ Route::middleware(['auth', 'verified'])->prefix('onboarding')->name('onboarding.
 
 // Protected routes (require auth, verified email, and completed onboarding)
 Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
+    // AI Chat Page
+    \Inertia\Inertia::macro('aiChat', function () {
+        return \Inertia\Inertia::render('ai-chat');
+    });
+    Route::get('/ai-chat', fn () => \Inertia\Inertia::render('ai-chat'))->name('ai-chat');
+    Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class, 'chat'])->name('ai-chat.send');
+    Route::get('/ai-chat/history', [\App\Http\Controllers\AiChatController::class, 'history'])->name('ai-chat.history');
+
+    // AI CV Generator
+    Route::prefix('ai-cv-generator')->name('ai-cv-generator.')->group(function () {
+        Route::get('/', [AiCvGeneratorController::class, 'index'])->name('index');
+        Route::post('/generate', [AiCvGeneratorController::class, 'generate'])->name('generate');
+        Route::post('/refine', [AiCvGeneratorController::class, 'refine'])->name('refine');
+        Route::post('/save', [AiCvGeneratorController::class, 'save'])->name('save');
+    });
+
     // User Dashboard
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
@@ -75,6 +102,11 @@ Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
     Route::post('cover-letters/generate', [CoverLetterController::class, 'generate'])->name('cover-letters.generate');
     Route::post('cover-letters/{cover_letter}/improve', [CoverLetterController::class, 'improve'])->name('cover-letters.improve');
 
+    // User Subscription Management
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::get('/subscription', [\App\Http\Controllers\SubscriptionController::class, 'index'])->name('subscription');
+    });
+
     // Admin routes
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
@@ -86,6 +118,40 @@ Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
         Route::get('/templates', [\App\Http\Controllers\Admin\AdminController::class, 'templates'])->name('templates');
         Route::get('/analytics', [\App\Http\Controllers\Admin\AdminController::class, 'analytics'])->name('analytics');
         Route::get('/settings', [\App\Http\Controllers\Admin\AdminController::class, 'settings'])->name('settings');
+        Route::resource('pricing-plans', \App\Http\Controllers\Admin\PricingPlanController::class);
+
+        // Template Builder Routes
+        Route::prefix('template-builder')->name('template-builder.')->group(function () {
+            Route::get('/', [TemplateBuilderController::class, 'index'])->name('index');
+            Route::get('/create', [TemplateBuilderController::class, 'create'])->name('create');
+            Route::post('/', [TemplateBuilderController::class, 'store'])->name('store');
+            Route::get('/{template}/edit', [TemplateBuilderController::class, 'edit'])->name('edit');
+            Route::put('/{template}', [TemplateBuilderController::class, 'update'])->name('update');
+            Route::delete('/{template}', [TemplateBuilderController::class, 'destroy'])->name('destroy');
+            Route::patch('/{template}/toggle-status', [TemplateBuilderController::class, 'toggleStatus'])->name('toggle-status');
+            Route::post('/{template}/duplicate', [TemplateBuilderController::class, 'duplicate'])->name('duplicate');
+            Route::get('/{template}/preview', [TemplateBuilderController::class, 'preview'])->name('preview');
+        });
+
+        // Testimonials & Site Settings Routes
+        Route::prefix('testimonials')->name('testimonials.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\TestimonialController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Admin\TestimonialController::class, 'store'])->name('store');
+            Route::put('/{testimonial}', [\App\Http\Controllers\Admin\TestimonialController::class, 'update'])->name('update');
+            Route::delete('/{testimonial}', [\App\Http\Controllers\Admin\TestimonialController::class, 'destroy'])->name('destroy');
+            Route::patch('/{testimonial}/toggle-status', [\App\Http\Controllers\Admin\TestimonialController::class, 'toggleStatus'])->name('toggle-status');
+            Route::patch('/{testimonial}/toggle-featured', [\App\Http\Controllers\Admin\TestimonialController::class, 'toggleFeatured'])->name('toggle-featured');
+        });
+        Route::put('/site-stats', [\App\Http\Controllers\Admin\TestimonialController::class, 'updateStats'])->name('site-stats.update');
+
+        // Site Settings Routes
+        Route::prefix('site-settings')->name('site-settings.')->group(function () {
+            Route::put('/general', [\App\Http\Controllers\Admin\SiteSettingController::class, 'updateGeneral'])->name('general');
+            Route::put('/contact', [\App\Http\Controllers\Admin\SiteSettingController::class, 'updateContact'])->name('contact');
+            Route::put('/social', [\App\Http\Controllers\Admin\SiteSettingController::class, 'updateSocial'])->name('social');
+            Route::put('/email', [\App\Http\Controllers\Admin\SiteSettingController::class, 'updateEmail'])->name('email');
+            Route::put('/stats', [\App\Http\Controllers\Admin\SiteSettingController::class, 'updateStats'])->name('stats');
+        });
     });
 
     // AI Chat History

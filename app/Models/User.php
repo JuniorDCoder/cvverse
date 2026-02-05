@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -34,6 +35,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'bio',
         'onboarding_completed',
         'onboarding_completed_at',
+        'pricing_plan_id',
+        'subscription_ends_at',
+        'subscription_status',
     ];
 
     /**
@@ -62,6 +66,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'interests' => 'array',
             'onboarding_completed' => 'boolean',
             'onboarding_completed_at' => 'datetime',
+            'subscription_ends_at' => 'datetime',
         ];
     }
 
@@ -71,6 +76,52 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    /**
+     * Get the user's pricing plan.
+     *
+     * @return BelongsTo<PricingPlan, $this>
+     */
+    public function pricingPlan(): BelongsTo
+    {
+        return $this->belongsTo(PricingPlan::class);
+    }
+
+    /**
+     * Check if user has an active premium subscription.
+     */
+    public function hasPremiumAccess(): bool
+    {
+        // Admins always have premium access
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        // Check if user has active subscription that hasn't expired
+        if ($this->subscription_status === 'active' && $this->pricing_plan_id) {
+            if ($this->subscription_ends_at === null) {
+                return true; // Lifetime or indefinite subscription
+            }
+
+            return $this->subscription_ends_at->isFuture();
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user can access a specific template.
+     */
+    public function canAccessTemplate(CvTemplate $template): bool
+    {
+        // Free templates are accessible to everyone
+        if (! $template->is_premium) {
+            return true;
+        }
+
+        // Premium templates require premium access
+        return $this->hasPremiumAccess();
     }
 
     /**

@@ -13,6 +13,8 @@ import {
     Code,
     Languages,
     Sparkles,
+    FolderKanban,
+    Award,
 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -60,6 +62,19 @@ interface Cv {
         gpa?: string;
     }> | null;
     skills?: string[] | null;
+    projects?: Array<{
+        name: string;
+        title?: string;
+        description?: string;
+        url?: string;
+        technologies?: string[];
+    }> | null;
+    certifications?: Array<{
+        name: string;
+        issuer?: string;
+        date?: string;
+        url?: string;
+    }> | null;
     languages?: Array<{
         language: string;
         proficiency: string;
@@ -96,6 +111,8 @@ const form = useForm({
     experience: props.cv.experience ?? [],
     education: props.cv.education ?? [],
     skills: props.cv.skills ?? [],
+    projects: props.cv.projects ?? [],
+    certifications: props.cv.certifications ?? [],
     languages: props.cv.languages ?? [],
 });
 
@@ -116,6 +133,8 @@ watch(() => props.cv, (newCv: Cv) => {
     form.experience = newCv.experience ?? [];
     form.education = newCv.education ?? [];
     form.skills = newCv.skills ?? [];
+    form.projects = newCv.projects ?? [];
+    form.certifications = newCv.certifications ?? [];
     form.languages = newCv.languages ?? [];
 }, { deep: true });
 
@@ -169,6 +188,46 @@ const addEducation = () => {
 };
 const removeEducation = (index: number) => {
     form.education.splice(index, 1);
+};
+
+// Project handling
+const newTech = ref<Record<number, string>>({});
+const addProject = () => {
+    form.projects.push({
+        name: '',
+        description: '',
+        url: '',
+        technologies: [],
+    });
+};
+const removeProject = (index: number) => {
+    form.projects.splice(index, 1);
+};
+const addTechnology = (projectIndex: number) => {
+    const tech = newTech.value[projectIndex]?.trim();
+    if (tech && !form.projects[projectIndex].technologies?.includes(tech)) {
+        if (!form.projects[projectIndex].technologies) {
+            form.projects[projectIndex].technologies = [];
+        }
+        form.projects[projectIndex].technologies!.push(tech);
+        newTech.value[projectIndex] = '';
+    }
+};
+const removeTechnology = (projectIndex: number, techIndex: number) => {
+    form.projects[projectIndex].technologies?.splice(techIndex, 1);
+};
+
+// Certification handling
+const addCertification = () => {
+    form.certifications.push({
+        name: '',
+        issuer: '',
+        date: '',
+        url: '',
+    });
+};
+const removeCertification = (index: number) => {
+    form.certifications.splice(index, 1);
 };
 
 // Language handling
@@ -472,6 +531,133 @@ const submit = () => {
                                     <X class="h-3 w-3" />
                                 </Button>
                             </Badge>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <!-- Projects -->
+                <Card>
+                    <CardHeader class="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle class="flex items-center gap-2">
+                                <FolderKanban class="h-5 w-5" />
+                                Projects
+                            </CardTitle>
+                        </div>
+                        <Button type="button" variant="outline" size="sm" @click="addProject">
+                            <Plus class="h-4 w-4 mr-1" />
+                            Add
+                        </Button>
+                    </CardHeader>
+                    <CardContent class="space-y-4">
+                        <div v-if="form.projects.length === 0" class="text-center py-8 text-muted-foreground">
+                            <FolderKanban class="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p>No projects added yet</p>
+                        </div>
+                        <div
+                            v-for="(project, index) in form.projects"
+                            :key="index"
+                            class="p-4 border rounded-lg space-y-4"
+                        >
+                            <div class="flex items-center justify-between">
+                                <span class="font-medium">Project {{ index + 1 }}</span>
+                                <Button type="button" variant="ghost" size="sm" @click="removeProject(index)">
+                                    <X class="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-2">
+                                    <Label>Project Name</Label>
+                                    <Input v-model="project.name" placeholder="Project name" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>URL (optional)</Label>
+                                    <Input v-model="project.url" placeholder="https://github.com/..." />
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <Label>Description</Label>
+                                <Textarea v-model="project.description" placeholder="Describe your project..." rows="3" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label>Technologies</Label>
+                                <div class="flex gap-2">
+                                    <Input
+                                        v-model="newTech[index]"
+                                        placeholder="Add technology..."
+                                        @keyup.enter.prevent="addTechnology(index)"
+                                    />
+                                    <Button type="button" variant="outline" @click="addTechnology(index)">
+                                        <Plus class="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <div v-if="project.technologies && project.technologies.length > 0" class="flex flex-wrap gap-2 mt-2">
+                                    <Badge v-for="(tech, techIndex) in project.technologies" :key="techIndex" variant="secondary" class="pl-3 pr-1 py-1">
+                                        {{ tech }}
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            class="h-5 w-5 p-0 ml-1 hover:bg-transparent"
+                                            @click="removeTechnology(index, techIndex)"
+                                        >
+                                            <X class="h-3 w-3" />
+                                        </Button>
+                                    </Badge>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <!-- Certifications -->
+                <Card>
+                    <CardHeader class="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle class="flex items-center gap-2">
+                                <Award class="h-5 w-5" />
+                                Certifications
+                            </CardTitle>
+                        </div>
+                        <Button type="button" variant="outline" size="sm" @click="addCertification">
+                            <Plus class="h-4 w-4 mr-1" />
+                            Add
+                        </Button>
+                    </CardHeader>
+                    <CardContent class="space-y-4">
+                        <div v-if="form.certifications.length === 0" class="text-center py-8 text-muted-foreground">
+                            <Award class="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p>No certifications added yet</p>
+                        </div>
+                        <div
+                            v-for="(cert, index) in form.certifications"
+                            :key="index"
+                            class="p-4 border rounded-lg space-y-4"
+                        >
+                            <div class="flex items-center justify-between">
+                                <span class="font-medium">Certification {{ index + 1 }}</span>
+                                <Button type="button" variant="ghost" size="sm" @click="removeCertification(index)">
+                                    <X class="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-2">
+                                    <Label>Certification Name</Label>
+                                    <Input v-model="cert.name" placeholder="AWS Solutions Architect" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>Issuer</Label>
+                                    <Input v-model="cert.issuer" placeholder="Amazon Web Services" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>Date</Label>
+                                    <Input v-model="cert.date" type="month" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>URL (optional)</Label>
+                                    <Input v-model="cert.url" placeholder="https://credential.example.com/..." />
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

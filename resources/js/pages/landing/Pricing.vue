@@ -1,77 +1,68 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import LandingLayout from '@/layouts/LandingLayout.vue';
-import { register, contact, services } from '@/routes';
+import { register, contact, services, dashboard } from '@/routes';
+import { router } from '@inertiajs/vue3';
+import payment from '@/routes/payment';
+import { Check, X, Info } from 'lucide-vue-next';
+
+interface Plan {
+    id: number;
+    name: string;
+    description: string;
+    price: string;
+    currency: string;
+    interval: string;
+    features: string[];
+    is_active: boolean;
+    slug: string;
+}
+
+const props = defineProps<{
+    plans: Plan[];
+    currency: string;
+    country: string;
+}>();
 
 const billingCycle = ref<'monthly' | 'yearly'>('monthly');
 
-const plans = [
-    {
-        name: 'Free',
-        description: 'Perfect for getting started',
-        monthlyPrice: 0,
-        yearlyPrice: 0,
-        popular: false,
-        features: [
-            { text: '1 CV', included: true },
-            { text: 'Basic templates (5)', included: true },
-            { text: 'PDF download', included: true },
-            { text: 'Basic AI suggestions', included: true },
-            { text: 'Email support', included: true },
-            { text: 'ATS optimization', included: false },
-            { text: 'Cover letter builder', included: false },
-            { text: 'LinkedIn import', included: false },
-            { text: 'Priority support', included: false },
-        ],
-        cta: 'Get Started Free',
-        ctaVariant: 'outline' as const,
-    },
-    {
-        name: 'Pro',
-        description: 'Best for active job seekers',
-        monthlyPrice: 12,
-        yearlyPrice: 96,
-        popular: true,
-        features: [
-            { text: 'Unlimited CVs', included: true },
-            { text: 'All templates (50+)', included: true },
-            { text: 'PDF, DOCX, TXT export', included: true },
-            { text: 'Advanced AI writing', included: true },
-            { text: 'ATS optimization', included: true },
-            { text: 'Cover letter builder', included: true },
-            { text: 'LinkedIn import', included: true },
-            { text: 'Version history', included: true },
-            { text: 'Priority email support', included: true },
-        ],
-        cta: 'Start Pro Trial',
-        ctaVariant: 'default' as const,
-    },
-    {
-        name: 'Enterprise',
-        description: 'For teams and organizations',
-        monthlyPrice: 49,
-        yearlyPrice: 468,
-        popular: false,
-        features: [
-            { text: 'Everything in Pro', included: true },
-            { text: 'Team management', included: true },
-            { text: 'Custom branding', included: true },
-            { text: 'API access', included: true },
-            { text: 'SSO integration', included: true },
-            { text: 'Analytics dashboard', included: true },
-            { text: 'Bulk export', included: true },
-            { text: 'Dedicated account manager', included: true },
-            { text: '24/7 phone support', included: true },
-        ],
-        cta: 'Contact Sales',
-        ctaVariant: 'outline' as const,
-    },
-];
+// Helper to determine if a plan should be shown based on toggle
+const filteredPlans = computed(() => {
+    // Always show one_time plans (like Lifetime deals) or Free plans (price == 0) regardless of toggle?
+    // Or maybe map 'monthly' to monthly plans + free plans, and 'yearly' to yearly plans + free plans?
+    // For now, let's follow the standard pattern:
+    // If it's a subscription (monthly/yearly), filter by cycle.
+    // If it's a one-time purchase, maybe show it always or in a separate section?
+    // Let's assume standard SaaS model for now.
+    
+    return props.plans.filter(p => {
+        // Always show free plans
+        if (parseFloat(p.price) === 0) return true;
+        
+        if (p.interval === 'one_time') return true; // Show lifetime deals always
+        
+        return p.interval === billingCycle.value;
+    }).sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+});
+
+const handleSubscribe = (plan: Plan) => {
+    if (usePage().props.auth.user) {
+        if (parseFloat(plan.price) === 0) {
+             // Ensure we handle free plan "subscription" logically, maybe just redirect to dashboard or a specific route
+             // For now, let's assume checkout handles it (e.g. logs them in/upgrades them) or we just go to register
+             router.visit(dashboard());
+        } else {
+            router.visit(payment.checkout(plan.id));
+        }
+    } else {
+        router.visit(register());
+    }
+};
 
 const faqs = [
     {
@@ -80,233 +71,152 @@ const faqs = [
     },
     {
         question: 'What happens when my trial ends?',
-        answer: 'After your 14-day Pro trial ends, you\'ll be automatically moved to the Free plan unless you choose to subscribe. No automatic charges.',
+        answer: 'If you are on a trial, you will be downgraded to the Free plan automatically.',
     },
     {
         question: 'Can I switch plans anytime?',
-        answer: 'Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we\'ll prorate any differences.',
+        answer: 'Absolutely! You can upgrade or downgrade your plan at any time.',
     },
-    {
-        question: 'Is there a discount for annual billing?',
-        answer: 'Yes! When you choose annual billing, you get 2 months free compared to monthly billing. That\'s a 17% discount.',
-    },
-    {
-        question: 'Do you offer refunds?',
-        answer: 'We offer a 30-day money-back guarantee on all paid plans. If you\'re not satisfied, contact us for a full refund.',
-    },
-    {
-        question: 'Can I cancel my subscription?',
-        answer: 'Yes, you can cancel your subscription at any time from your account settings. You\'ll retain access until the end of your billing period.',
+     {
+        question: 'What payment methods do you accept?',
+        answer: 'We accept Mobile Money (Cameroon) and Credit Cards (Global).',
     },
 ];
 </script>
 
 <template>
     <LandingLayout title="Pricing">
+        <!-- Background Gradients -->
+        <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+             <div class="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-30 animate-pulse" />
+             <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl opacity-30 animate-pulse delay-1000" />
+        </div>
+
         <!-- Hero Section -->
-        <section class="relative overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
-            <div class="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.1),rgba(255,255,255,0))]" />
-            
-            <div class="container relative mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
-                <div class="max-w-3xl mx-auto text-center">
-                    <Badge variant="outline" class="mb-6">Pricing</Badge>
-                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-                        Simple, transparent
-                        <span class="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                            pricing
+        <section class="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden">
+            <div class="container relative mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <Badge variant="outline" class="mb-6 border-primary/20 bg-primary/5 text-primary">Simple Pricing</Badge>
+                <h1 class="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight mb-8">
+                    Choose the plan that's
+                    <span class="relative inline-block">
+                        <span class="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 blur-2xl opacity-30"></span>
+                        <span class="relative bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                            right for you
                         </span>
-                    </h1>
-                    <p class="text-lg sm:text-xl text-muted-foreground mb-8">
-                        Choose the perfect plan for your needs. Start free, upgrade when you're ready.
-                    </p>
-                    
-                    <!-- Billing Toggle -->
-                    <div class="inline-flex items-center gap-3 bg-muted rounded-full p-1">
-                        <button
-                            @click="billingCycle = 'monthly'"
-                            class="px-4 py-2 text-sm font-medium rounded-full transition-colors"
-                            :class="billingCycle === 'monthly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
-                        >
-                            Monthly
-                        </button>
-                        <button
-                            @click="billingCycle = 'yearly'"
-                            class="px-4 py-2 text-sm font-medium rounded-full transition-colors flex items-center gap-2"
-                            :class="billingCycle === 'yearly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
-                        >
-                            Yearly
-                            <Badge variant="secondary" class="text-xs">Save 17%</Badge>
-                        </button>
-                    </div>
+                    </span>
+                </h1>
+                <p class="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+                    Whether you're just starting out or ready to accelerate your career, we have a plan to help you land your dream job.
+                </p>
+                
+                <!-- Billing Toggle -->
+                <div class="inline-flex items-center p-1 bg-muted/50 backdrop-blur-sm border rounded-full relative">
+                    <button
+                        @click="billingCycle = 'monthly'"
+                        class="relative z-10 px-6 py-2.5 text-sm font-medium rounded-full transition-all duration-300 ease-in-out"
+                        :class="billingCycle === 'monthly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+                    >
+                        Monthly
+                    </button>
+                    <button
+                        @click="billingCycle = 'yearly'"
+                        class="relative z-10 px-6 py-2.5 text-sm font-medium rounded-full transition-all duration-300 ease-in-out flex items-center gap-2"
+                        :class="billingCycle === 'yearly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+                    >
+                        Yearly
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-600 border border-green-500/20">
+                            -20%
+                        </span>
+                    </button>
                 </div>
             </div>
         </section>
 
         <!-- Pricing Cards -->
-        <section class="pb-20 lg:pb-28 -mt-8">
+        <section class="pb-32">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
-                    <Card 
-                        v-for="plan in plans" 
-                        :key="plan.name"
-                        class="relative flex flex-col"
-                        :class="plan.popular ? 'border-primary shadow-lg scale-105 z-10' : 'hover:shadow-lg transition-shadow'"
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                    <!-- Dynamic Plans -->
+                    <div 
+                        v-for="plan in filteredPlans" 
+                        :key="plan.id"
+                        class="group relative"
                     >
-                        <!-- Popular badge -->
-                        <div 
-                            v-if="plan.popular" 
-                            class="absolute -top-4 left-1/2 -translate-x-1/2"
-                        >
-                            <Badge class="px-4 py-1 bg-primary text-primary-foreground">
-                                Most Popular
-                            </Badge>
-                        </div>
+                        <!-- Glow Effect for Popular Plans (Optional logic, e.g. if price > 0 and price < max) -->
+                        <div v-if="parseFloat(plan.price) > 0" class="absolute -inset-[1px] bg-gradient-to-b from-primary/50 to-purple-600/50 rounded-2xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         
-                        <CardHeader class="text-center pb-2">
-                            <CardTitle class="text-2xl">{{ plan.name }}</CardTitle>
-                            <CardDescription>{{ plan.description }}</CardDescription>
-                        </CardHeader>
-                        
-                        <CardContent class="flex-1">
-                            <!-- Price -->
-                            <div class="text-center mb-6">
-                                <div class="flex items-end justify-center gap-1">
-                                    <span class="text-4xl font-bold">
-                                        ${{ billingCycle === 'monthly' ? plan.monthlyPrice : Math.round(plan.yearlyPrice / 12) }}
-                                    </span>
-                                    <span class="text-muted-foreground mb-1">/month</span>
-                                </div>
-                                <p v-if="plan.yearlyPrice > 0 && billingCycle === 'yearly'" class="text-sm text-muted-foreground mt-1">
-                                    ${{ plan.yearlyPrice }} billed annually
-                                </p>
-                                <p v-if="plan.monthlyPrice === 0" class="text-sm text-muted-foreground mt-1">
-                                    Free forever
-                                </p>
-                            </div>
-                            
-                            <Separator class="my-6" />
-                            
-                            <!-- Features -->
-                            <ul class="space-y-3">
-                                <li 
-                                    v-for="feature in plan.features" 
-                                    :key="feature.text"
-                                    class="flex items-center gap-3 text-sm"
-                                >
-                                    <div 
-                                        class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                                        :class="feature.included ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'"
-                                    >
-                                        <svg v-if="feature.included" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="20,6 9,17 4,12"/>
-                                        </svg>
-                                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M18 6 6 18"/>
-                                            <path d="m6 6 12 12"/>
-                                        </svg>
+                        <Card class="relative h-full flex flex-col bg-card/50 backdrop-blur-xl border-muted/50 transition-all duration-300 group-hover:-translate-y-1">
+                            <CardHeader class="pb-8">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <CardTitle class="text-2xl font-bold mb-2">{{ plan.name }}</CardTitle>
+                                        <CardDescription>{{ parseFloat(plan.price) === 0 ? 'Forever free' : 'Perfect for professionals' }}</CardDescription>
                                     </div>
-                                    <span :class="feature.included ? '' : 'text-muted-foreground'">
-                                        {{ feature.text }}
+                                    <Badge v-if="parseFloat(plan.price) > 0" variant="secondary" class="bg-primary/10 text-primary border-primary/20">
+                                        Popular
+                                    </Badge>
+                                </div>
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-5xl font-bold tracking-tight">
+                                        {{ parseFloat(plan.price) === 0 ? 'Free' : (plan.currency === 'USD' ? '$' : '') + Number(plan.price).toLocaleString() + (plan.currency !== 'USD' ? ' ' + plan.currency : '') }}
                                     </span>
-                                </li>
-                            </ul>
-                        </CardContent>
-                        
-                        <CardFooter>
-                            <Button 
-                                :variant="plan.ctaVariant" 
-                                as-child 
-                                class="w-full"
-                                :class="plan.popular ? 'shadow-lg' : ''"
-                            >
-                                <Link :href="plan.name === 'Enterprise' ? contact() : register()">
-                                    {{ plan.cta }}
-                                </Link>
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                </div>
-                
-                <!-- Enterprise callout -->
-                <div class="mt-12 text-center">
-                    <p class="text-muted-foreground">
-                        Need a custom plan for your organization? 
-                        <Link :href="contact()" class="text-primary hover:underline font-medium">
-                            Contact our sales team
-                        </Link>
-                    </p>
-                </div>
-            </div>
-        </section>
+                                    <span v-if="parseFloat(plan.price) > 0" class="text-muted-foreground">
+                                        /{{ plan.interval === 'one_time' ? 'lifetime' : plan.interval }}
+                                    </span>
+                                </div>
+                            </CardHeader>
+                            
+                            <CardContent class="flex-1">
+                                <Separator class="mb-8" />
+                                <ul class="space-y-4">
+                                    <li 
+                                        v-for="(feature, idx) in plan.features" 
+                                        :key="idx"
+                                        class="flex items-start gap-3"
+                                    >
+                                        <div class="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            <Check class="w-3.5 h-3.5" />
+                                        </div>
+                                        <span class="text-sm text-muted-foreground">{{ feature }}</span>
+                                    </li>
+                                </ul>
+                            </CardContent>
+                            
+                            <CardFooter>
+                                <Button 
+                                    class="w-full h-12 text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all"
+                                    :variant="parseFloat(plan.price) === 0 ? 'outline' : 'default'"
+                                    @click="handleSubscribe(plan)"
+                                >
+                                    {{ parseFloat(plan.price) === 0 ? 'Get Started' : 'Subscribe Now' }}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </div>
 
-        <!-- Features Comparison -->
-        <section class="py-20 lg:py-28 bg-muted/30">
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center max-w-3xl mx-auto mb-16">
-                    <Badge variant="outline" class="mb-4">All Plans Include</Badge>
-                    <h2 class="text-3xl lg:text-4xl font-bold mb-4">
-                        Core features in every plan
-                    </h2>
-                    <p class="text-lg text-muted-foreground">
-                        Even our free plan includes these essential features.
-                    </p>
-                </div>
-                
-                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-                    <div class="bg-card border rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
-                        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                            </svg>
+                    <div v-if="filteredPlans.length === 0" class="col-span-full text-center py-20">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+                            <Info class="w-8 h-8 text-muted-foreground" />
                         </div>
-                        <h3 class="font-semibold mb-2">Secure Storage</h3>
-                        <p class="text-sm text-muted-foreground">Your data is encrypted and securely stored in the cloud.</p>
-                    </div>
-                    <div class="bg-card border rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
-                        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                                <line x1="8" y1="21" x2="16" y2="21"/>
-                                <line x1="12" y1="17" x2="12" y2="21"/>
-                            </svg>
-                        </div>
-                        <h3 class="font-semibold mb-2">Real-Time Preview</h3>
-                        <p class="text-sm text-muted-foreground">See your changes instantly as you edit.</p>
-                    </div>
-                    <div class="bg-card border rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
-                        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"/>
-                                <polyline points="12,6 12,12 16,14"/>
-                            </svg>
-                        </div>
-                        <h3 class="font-semibold mb-2">Auto-Save</h3>
-                        <p class="text-sm text-muted-foreground">Never lose your work with automatic saving.</p>
-                    </div>
-                    <div class="bg-card border rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
-                        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-                            </svg>
-                        </div>
-                        <h3 class="font-semibold mb-2">Email Support</h3>
-                        <p class="text-sm text-muted-foreground">Get help whenever you need it.</p>
+                        <h3 class="text-xl font-semibold mb-2">No plans available</h3>
+                        <p class="text-muted-foreground">
+                            We currently don't have any plans available for {{ billingCycle }} billing in your region.
+                        </p>
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- FAQ Section -->
-        <section class="py-20 lg:py-28">
+        <section class="py-20 lg:py-32 bg-muted/30">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center max-w-3xl mx-auto mb-16">
                     <Badge variant="outline" class="mb-4">FAQ</Badge>
                     <h2 class="text-3xl lg:text-4xl font-bold mb-4">
                         Frequently asked questions
                     </h2>
-                    <p class="text-lg text-muted-foreground">
-                        Everything you need to know about our pricing and plans.
+                    <p class="text-muted-foreground">
+                        Everything you need to know about plans and billing.
                     </p>
                 </div>
                 
@@ -314,56 +224,15 @@ const faqs = [
                     <Card 
                         v-for="faq in faqs" 
                         :key="faq.question"
-                        class="hover:shadow-md transition-shadow"
+                        class="bg-background/50 backdrop-blur-sm hover:shadow-md transition-all duration-300"
                     >
-                        <CardHeader class="pb-3">
+                        <CardHeader>
                             <CardTitle class="text-lg font-semibold">{{ faq.question }}</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p class="text-muted-foreground">{{ faq.answer }}</p>
+                            <p class="text-muted-foreground leading-relaxed">{{ faq.answer }}</p>
                         </CardContent>
                     </Card>
-                </div>
-                
-                <div class="mt-12 text-center">
-                    <p class="text-muted-foreground mb-4">
-                        Still have questions?
-                    </p>
-                    <Button variant="outline" as-child>
-                        <Link :href="contact()">
-                            Contact Support
-                        </Link>
-                    </Button>
-                </div>
-            </div>
-        </section>
-
-        <!-- CTA Section -->
-        <section class="py-20 lg:py-28 bg-gradient-to-br from-primary/10 via-purple-500/10 to-pink-500/10">
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="max-w-3xl mx-auto text-center">
-                    <h2 class="text-3xl lg:text-4xl font-bold mb-4">
-                        Start building your CV today
-                    </h2>
-                    <p class="text-lg text-muted-foreground mb-8">
-                        Join over 500,000 professionals who trust CVverse. Try it free—no credit card required.
-                    </p>
-                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Button size="lg" as-child class="w-full sm:w-auto text-base px-8">
-                            <Link :href="register()">
-                                Get Started Free
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M5 12h14"/>
-                                    <path d="m12 5 7 7-7 7"/>
-                                </svg>
-                            </Link>
-                        </Button>
-                        <Button variant="outline" size="lg" as-child class="w-full sm:w-auto text-base px-8">
-                            <Link :href="services()">
-                                View All Features
-                            </Link>
-                        </Button>
-                    </div>
                 </div>
             </div>
         </section>

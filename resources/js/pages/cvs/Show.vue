@@ -25,6 +25,8 @@ import {
     Printer,
     FileType,
     MessageSquare,
+    FolderKanban,
+    ExternalLink,
 } from 'lucide-vue-next';
 import { marked } from 'marked';
 import { ref, computed, watch } from 'vue';
@@ -518,6 +520,69 @@ const deleteCv = () => {
                         </CardContent>
                     </Card>
 
+                    <!-- Projects -->
+                    <Card v-if="cv.projects && cv.projects.length > 0">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <FolderKanban class="h-5 w-5" />
+                                Projects
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent class="space-y-4">
+                            <div v-for="(project, index) in cv.projects" :key="index" class="p-4 rounded-lg border bg-muted/30">
+                                <div class="flex items-start justify-between gap-2">
+                                    <h4 class="font-semibold">{{ project.name || project.title }}</h4>
+                                    <a 
+                                        v-if="project.url" 
+                                        :href="project.url.startsWith('http') ? project.url : `https://${project.url}`" 
+                                        target="_blank" 
+                                        class="text-primary hover:text-primary/80"
+                                    >
+                                        <ExternalLink class="h-4 w-4" />
+                                    </a>
+                                </div>
+                                <p v-if="project.description" class="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">{{ project.description }}</p>
+                                <div v-if="project.technologies && project.technologies.length > 0" class="flex flex-wrap gap-1 mt-3">
+                                    <Badge v-for="tech in project.technologies" :key="tech" variant="secondary" class="text-xs">
+                                        {{ tech }}
+                                    </Badge>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <!-- Certifications -->
+                    <Card v-if="cv.certifications && cv.certifications.length > 0">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Award class="h-5 w-5" />
+                                Certifications
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent class="space-y-4">
+                            <div v-for="(cert, index) in cv.certifications" :key="index" class="flex items-start gap-4">
+                                <div class="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+                                    <Award class="h-5 w-5 text-amber-600" />
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <h4 class="font-semibold">{{ cert.name }}</h4>
+                                        <a 
+                                            v-if="cert.url" 
+                                            :href="cert.url.startsWith('http') ? cert.url : `https://${cert.url}`" 
+                                            target="_blank" 
+                                            class="text-primary hover:text-primary/80"
+                                        >
+                                            <ExternalLink class="h-4 w-4" />
+                                        </a>
+                                    </div>
+                                    <p v-if="cert.issuer" class="text-primary">{{ cert.issuer }}</p>
+                                    <p v-if="cert.date" class="text-sm text-muted-foreground">{{ cert.date }}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     <!-- Languages -->
                     <Card v-if="cv.languages && cv.languages.length > 0">
                         <CardHeader>
@@ -530,7 +595,7 @@ const deleteCv = () => {
                             <div class="flex flex-wrap gap-4">
                                 <div v-for="lang in cv.languages" :key="lang.language" class="flex items-center gap-2">
                                     <span class="font-medium">{{ lang.language }}</span>
-                                    <Badge variant="outline">{{ proficiencyLabels[lang.proficiency] }}</Badge>
+                                    <Badge variant="outline">{{ proficiencyLabels[lang.proficiency] || lang.proficiency }}</Badge>
                                 </div>
                             </div>
                         </CardContent>

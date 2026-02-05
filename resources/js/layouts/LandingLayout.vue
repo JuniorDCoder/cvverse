@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useAppearance } from '@/composables/useAppearance';
 import { home, about, services, pricing, contact, login, register, dashboard } from '@/routes';
+import { index as templatesIndex } from '@/routes/templates';
 
 const props = defineProps<{
     title?: string;
@@ -27,6 +28,7 @@ const navLinks = [
     { name: 'Home', href: home, path: '/' },
     { name: 'About', href: about, path: '/about' },
     { name: 'Services', href: services, path: '/services' },
+    { name: 'Templates', href: templatesIndex, path: '/templates' },
     { name: 'Pricing', href: pricing, path: '/pricing' },
     { name: 'Contact', href: contact, path: '/contact' },
 ];
