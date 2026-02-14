@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { CreditCard, CheckCircle, Package } from 'lucide-vue-next';
+import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { computed } from 'vue';
 
 const props = defineProps<{
     subscription?: {
@@ -23,6 +23,12 @@ const props = defineProps<{
 }>();
 
 const hasActiveSubscription = computed(() => !!props.subscription && props.subscription.status === 'active');
+const page = usePage();
+const flashSuccess = computed(() => {
+    const value = page.props?.flash?.success;
+
+    return typeof value === 'string' ? value : '';
+});
 
 </script>
 
@@ -36,6 +42,10 @@ const hasActiveSubscription = computed(() => !!props.subscription && props.subsc
                 <div>
                     <h1 class="text-2xl font-bold tracking-tight">Subscription</h1>
                     <p class="text-muted-foreground">Manage your billing and subscription plan.</p>
+                </div>
+
+                <div v-if="flashSuccess" class="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+                    {{ flashSuccess }}
                 </div>
 
                 <!-- Active Subscription Card -->

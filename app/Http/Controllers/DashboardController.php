@@ -3,17 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\JobApplication;
+use App\Services\GeminiService;
+use App\Services\PlanService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use App\Services\GeminiService;
 
 class DashboardController extends Controller
 {
     public function __construct(
-        private readonly GeminiService $geminiService
+        private readonly GeminiService $geminiService,
+        private readonly PlanService $planService
     ) {}
 
     public function index(Request $request): Response
@@ -72,6 +74,7 @@ class DashboardController extends Controller
             'stats' => $stats,
             'statusBreakdown' => $statusBreakdown,
             'weeklyActivity' => $weeklyActivity,
+            'planSummary' => $this->planService->dashboardSummary($user),
         ]);
     }
 
@@ -106,6 +109,25 @@ class DashboardController extends Controller
      */
     public function chat(Request $request): JsonResponse
     {
+        $feature = $this->planService->checkFeature(Auth::user(), 'ai_assistant', 'AI assistant');
+        if (! $feature['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $feature['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
+
+        $usage = $this->planService->usage(Auth::user());
+        $aiLimit = $this->planService->checkLimit(Auth::user(), 'ai_messages_per_day', $usage['ai_messages_today'], 'AI messages');
+        if (! $aiLimit['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $aiLimit['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
+
         $validated = $request->validate([
             'message' => 'required|string',
             'history' => 'nullable|array',
@@ -113,7 +135,7 @@ class DashboardController extends Controller
 
         $result = $this->geminiService->chatWithAi($validated['message'], $validated['history'] ?? []);
 
-        if (!$result) {
+        if (! $result) {
             return response()->json(['success' => false, 'message' => 'AI failed to respond.'], 500);
         }
 

@@ -16,7 +16,6 @@ import {
     CreditCard,
     Sparkles,
     Quote,
-    Palette,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import NavFooter from '@/components/NavFooter.vue';
@@ -30,7 +29,6 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { dashboard, subscription } from '@/routes';
 import { type NavItem } from '@/types';
@@ -192,20 +190,20 @@ const footerNavItems: NavItem[] = [
 
 
         <SidebarContent>
-            <!-- Show grouped admin items on /admin routes -->
-            <template v-if="isAdmin && isAdminRoute">
-                <NavMain :items="adminOverviewItems" label="Overview" />
-                <NavMain :items="adminUsersItems" label="Users" />
-                <NavMain :items="adminContentItems" label="Content" />
-                <NavMain :items="adminPlatformItems" label="Platform" />
-            </template>
-            <!-- Show user items (and admin section if admin) on non-admin routes -->
-            <template v-else>
-                <NavMain :items="userNavItems" label="Main" />
-                <template v-if="isAdmin">
-                    <SidebarSeparator />
+            <template v-if="isAdmin">
+                <!-- Grouped admin nav on admin pages; flat admin nav elsewhere (e.g. settings pages). -->
+                <template v-if="isAdminRoute">
+                    <NavMain :items="adminOverviewItems" label="Overview" />
+                    <NavMain :items="adminUsersItems" label="Users" />
+                    <NavMain :items="adminContentItems" label="Content" />
+                    <NavMain :items="adminPlatformItems" label="Platform" />
+                </template>
+                <template v-else>
                     <NavMain :items="adminNavItems" label="Administration" />
                 </template>
+            </template>
+            <template v-else>
+                <NavMain :items="userNavItems" label="Main" />
             </template>
         </SidebarContent>
 

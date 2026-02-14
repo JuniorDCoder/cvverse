@@ -13,13 +13,13 @@ import {
     Minimize2, 
     History, 
     Paperclip, 
-    Image as ImageIcon,
     Trash2,
     Plus
 } from 'lucide-vue-next';
 import { marked } from 'marked';
 import { ref, watch, nextTick, computed, onMounted } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,11 +32,20 @@ import {
 import { useToast } from '@/composables/useToast';
 
 const page = usePage();
+const CV_EDITOR_INTRO_STORAGE_KEY = 'cvverse:cv-editor-intro:v1';
 
 // Detect context from page props
 const cvContext = computed(() => page.props.cv as any);
 const jobContext = computed(() => page.props.application as any);
 const coverLetterContext = computed(() => page.props.coverLetter as any);
+const currentPath = computed(() => {
+    if (typeof window !== 'undefined') {
+        return window.location.pathname;
+    }
+
+    return (page.url || '').split('?')[0];
+});
+const isCvDetailsPage = computed(() => /^\/cvs\/\d+$/.test(currentPath.value));
 
 const resourceContext = computed(() => {
     if (cvContext.value) return { type: 'cv', id: cvContext.value.id, name: cvContext.value.name, label: 'CV Editor' };
@@ -90,6 +99,10 @@ const clearFile = () => {
 // Default welcome message based on context
 const welcomeMessage = computed(() => { 
     if (resourceContext.value) {
+        if (resourceContext.value.type === 'cv') {
+            return "Hi! I'm your **CV Editor Assistant**. I can edit your CV in real time, apply targeted recommendations, rewrite sections, and improve wording instantly. You can reopen me anytime from the bottom-right button.";
+        }
+
         return `Hi! I'm in **${resourceContext.value.label}** mode. I can help you edit this ${resourceContext.value.type.replace('_', ' ')} directly. Just ask me to "change the title" or "improve the description"!`;
     }
     return 'Hi! I am your career assistant. Ask me anything about your job search, CVs, or career advice.';
@@ -121,6 +134,38 @@ const toggleMinimize = () => {
 const toggleFullscreen = () => {
     isFullscreen.value = !isFullscreen.value;
     if (isFullscreen.value) isMinimized.value = false;
+};
+
+const shouldAutoOpenCvEditor = () => {
+    if (typeof window === 'undefined') return false;
+    if (resourceContext.value?.type !== 'cv') return false;
+    if (!isCvDetailsPage.value) return false;
+
+    return localStorage.getItem(CV_EDITOR_INTRO_STORAGE_KEY) !== '1';
+};
+
+const autoOpenCvEditor = async () => {
+    if (!shouldAutoOpenCvEditor()) return;
+
+    isOpen.value = true;
+    isMinimized.value = false;
+    isFullscreen.value = false;
+    showHistory.value = false;
+
+    if (messages.value.length === 0) {
+        messages.value = [{ role: 'assistant', content: welcomeMessage.value }];
+    }
+
+    fetchSessions();
+    await scrollToBottom();
+
+    addToast({
+        title: 'CV Editor Assistant',
+        message: 'This assistant can edit your CV live and apply recommendations.',
+        type: 'info',
+    });
+
+    localStorage.setItem(CV_EDITOR_INTRO_STORAGE_KEY, '1');
 };
 
 const fetchSessions = async () => {
@@ -201,7 +246,7 @@ const playNotificationSound = () => {
         gain.gain.value = 0.1;
         osc.start();
         setTimeout(() => osc.stop(), 200);
-    } catch (e) { }
+    } catch { }
 };
 
 const renderMarkdown = (text: any) => {
@@ -304,6 +349,8 @@ onMounted(() => {
     if (messages.value.length === 0) {
         messages.value = [{ role: 'assistant', content: welcomeMessage.value }];
     }
+
+    autoOpenCvEditor();
 });
 
 defineExpose({ toggleChat });

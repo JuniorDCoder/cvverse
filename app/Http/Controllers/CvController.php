@@ -6,6 +6,7 @@ use App\Models\Cv;
 use App\Models\CvTemplate;
 use App\Models\JobApplication;
 use App\Services\GeminiService;
+use App\Services\PlanService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +21,8 @@ use PhpOffice\PhpWord\PhpWord;
 class CvController extends Controller
 {
     public function __construct(
-        private readonly GeminiService $geminiService
+        private readonly GeminiService $geminiService,
+        private readonly PlanService $planService
     ) {}
 
     /**
@@ -28,13 +30,18 @@ class CvController extends Controller
      */
     public function generate(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+        $limit = $this->planService->checkLimit($user, 'cvs', $user->cvs()->count(), 'CVs');
+        if (! $limit['allowed']) {
+            return redirect()->route('pricing')->with('error', $limit['message']);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'template' => 'required|string|exists:cv_templates,slug',
             'job_application_id' => 'required|exists:job_applications,id',
         ]);
 
-        $user = Auth::user();
         $job = JobApplication::findOrFail($validated['job_application_id']);
 
         $userData = [
@@ -103,11 +110,17 @@ class CvController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(): Response
+    public function create(): Response|RedirectResponse
     {
+        $user = Auth::user();
+        $limit = $this->planService->checkLimit($user, 'cvs', $user->cvs()->count(), 'CVs');
+        if (! $limit['allowed']) {
+            return redirect()->route('pricing')->with('error', $limit['message']);
+        }
+
         return Inertia::render('cvs/Create', [
             'templates' => CvTemplate::where('is_active', true)->pluck('slug'),
-            'jobApplications' => Auth::user()->jobApplications()->select('id', 'title', 'company_id')->with('company:id,name')->get(),
+            'jobApplications' => $user->jobApplications()->select('id', 'title', 'company_id')->with('company:id,name')->get(),
         ]);
     }
 
@@ -116,6 +129,12 @@ class CvController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+        $limit = $this->planService->checkLimit($user, 'cvs', $user->cvs()->count(), 'CVs');
+        if (! $limit['allowed']) {
+            return redirect()->route('pricing')->with('error', $limit['message']);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'template' => 'nullable|string|exists:cv_templates,slug',
@@ -129,8 +148,6 @@ class CvController extends Controller
             'languages' => 'nullable|array',
             'summary' => 'nullable|string',
         ]);
-
-        $user = Auth::user();
 
         // If this is set as primary, unset other primary CVs
         if ($validated['is_primary'] ?? false) {
@@ -151,6 +168,16 @@ class CvController extends Controller
      */
     public function upload(Request $request): JsonResponse
     {
+        $user = $request->user();
+        $limit = $this->planService->checkLimit($user, 'cvs', $user->cvs()->count(), 'CVs');
+        if (! $limit['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $limit['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
+
         $request->validate([
             'file' => 'required|file|mimes:pdf,doc,docx|max:10240',
             'name' => 'required|string|max:255',
@@ -301,6 +328,14 @@ class CvController extends Controller
     public function suggestions(Cv $cv, Request $request): JsonResponse
     {
         $this->authorize('update', $cv);
+        $feature = $this->planService->checkFeature($request->user(), 'ai_cv_generation', 'AI CV suggestions');
+        if (! $feature['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $feature['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
 
         $jobApplicationId = $request->input('job_application_id');
         $jobData = null;
@@ -349,6 +384,14 @@ class CvController extends Controller
     public function generateSummary(Cv $cv, Request $request): JsonResponse
     {
         $this->authorize('update', $cv);
+        $feature = $this->planService->checkFeature($request->user(), 'ai_cv_generation', 'AI CV summary generation');
+        if (! $feature['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $feature['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
 
         $jobApplicationId = $request->input('job_application_id');
         $jobData = null;
@@ -395,6 +438,14 @@ class CvController extends Controller
     public function rewriteSection(Cv $cv, Request $request): JsonResponse
     {
         $this->authorize('update', $cv);
+        $feature = $this->planService->checkFeature($request->user(), 'ai_cv_generation', 'AI CV section rewrite');
+        if (! $feature['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $feature['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
 
         $validated = $request->validate([
             'section' => 'required|string|in:experience,education,skills,summary',
@@ -504,6 +555,24 @@ class CvController extends Controller
     public function chat(Cv $cv, Request $request): JsonResponse
     {
         $this->authorize('update', $cv);
+        $feature = $this->planService->checkFeature($request->user(), 'ai_assistant', 'AI assistant');
+        if (! $feature['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $feature['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
+
+        $usage = $this->planService->usage($request->user());
+        $aiLimit = $this->planService->checkLimit($request->user(), 'ai_messages_per_day', $usage['ai_messages_today'], 'AI messages');
+        if (! $aiLimit['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $aiLimit['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
 
         $validated = $request->validate([
             'message' => 'required|string',

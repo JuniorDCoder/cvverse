@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\JobApplication;
 use App\Services\GeminiService;
 use App\Services\JobCrawlerService;
+use App\Services\PlanService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ class JobApplicationController extends Controller
 {
     public function __construct(
         private readonly JobCrawlerService $crawlerService,
-        private readonly GeminiService $geminiService
+        private readonly GeminiService $geminiService,
+        private readonly PlanService $planService
     ) {}
 
     /**
@@ -56,9 +58,13 @@ class JobApplicationController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(): Response
+    public function create(): Response|RedirectResponse
     {
         $user = Auth::user();
+        $limit = $this->planService->checkLimit($user, 'job_applications', $user->jobApplications()->count(), 'job applications');
+        if (! $limit['allowed']) {
+            return redirect()->route('pricing')->with('error', $limit['message']);
+        }
 
         return Inertia::render('jobs/Create', [
             'cvs' => $user->cvs()->select('id', 'name')->get(),
@@ -71,6 +77,12 @@ class JobApplicationController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+        $limit = $this->planService->checkLimit($user, 'job_applications', $user->jobApplications()->count(), 'job applications');
+        if (! $limit['allowed']) {
+            return redirect()->route('pricing')->with('error', $limit['message']);
+        }
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'company_name' => 'nullable|string|max:255',
@@ -87,8 +99,6 @@ class JobApplicationController extends Controller
             'notes' => 'nullable|string',
             'cv_id' => 'nullable|exists:cvs,id',
         ]);
-
-        $user = Auth::user();
 
         // Create or find company
         $companyId = null;
@@ -275,6 +285,15 @@ class JobApplicationController extends Controller
      */
     public function analyze(JobApplication $job): JsonResponse
     {
+        $feature = $this->planService->checkFeature(Auth::user(), 'ai_job_analysis', 'AI job analysis');
+        if (! $feature['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $feature['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
+
         $user = Auth::user();
         $cv = $job->cv ?? $user->primaryCv();
 

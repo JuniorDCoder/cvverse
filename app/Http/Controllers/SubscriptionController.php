@@ -12,12 +12,40 @@ class SubscriptionController extends Controller
      */
     public function index(Request $request)
     {
-        // Mock subscription data for now since we don't have the full billing system connected yet
-        // In a real app, this would come from the database/Cashier/Paddle/etc.
-        $subscription = null; // $request->user()->subscription();
+        $user = $request->user()->load('pricingPlan');
 
-        // Check if user has a mock subscription in session or DB logic
-        // For now, let's return null to show the "Upgrade" state, or mock it if needed.
+        if (
+            $user->subscription_status === 'active' &&
+            $user->subscription_ends_at !== null &&
+            $user->subscription_ends_at->isPast()
+        ) {
+            $user->forceFill([
+                'subscription_status' => 'expired',
+            ])->save();
+
+            $user->refresh()->load('pricingPlan');
+        }
+
+        $hasActiveSubscription = $user->subscription_status === 'active'
+            && $user->pricingPlan !== null
+            && ($user->subscription_ends_at === null || $user->subscription_ends_at->isFuture());
+
+        $subscription = null;
+
+        if ($hasActiveSubscription) {
+            $subscription = [
+                'name' => $user->pricingPlan->name,
+                'status' => $user->subscription_status,
+                'ends_at' => $user->subscription_ends_at?->toIso8601String(),
+                'plan' => [
+                    'name' => $user->pricingPlan->name,
+                    'price' => (string) $user->pricingPlan->price,
+                    'currency' => $user->pricingPlan->currency,
+                    'interval' => $user->pricingPlan->interval,
+                    'features' => (array) $user->pricingPlan->features,
+                ],
+            ];
+        }
 
         return Inertia::render('Subscription', [
             'subscription' => $subscription,

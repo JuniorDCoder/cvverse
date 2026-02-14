@@ -110,9 +110,46 @@ Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
     // Admin routes
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
-        Route::get('/users', [\App\Http\Controllers\Admin\AdminController::class, 'users'])->name('users');
-        Route::get('/cvs', [\App\Http\Controllers\Admin\AdminController::class, 'cvs'])->name('cvs');
-        Route::get('/cover-letters', [\App\Http\Controllers\Admin\AdminController::class, 'coverLetters'])->name('cover-letters');
+
+        // User Management
+        Route::get('/users', [\App\Http\Controllers\Admin\AdminUserController::class, 'index'])->name('users.index');
+        Route::post('/users', [\App\Http\Controllers\Admin\AdminUserController::class, 'store'])->name('users.store');
+        Route::get('/users/export', [\App\Http\Controllers\Admin\AdminUserController::class, 'export'])->name('users.export');
+        Route::get('/users/{user}', [\App\Http\Controllers\Admin\AdminUserController::class, 'show'])->name('users.show');
+        Route::put('/users/{user}', [\App\Http\Controllers\Admin\AdminUserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [\App\Http\Controllers\Admin\AdminUserController::class, 'destroy'])->name('users.destroy');
+        Route::patch('/users/{user}/toggle-role', [\App\Http\Controllers\Admin\AdminUserController::class, 'toggleRole'])->name('users.toggle-role');
+        Route::post('/users/{user}/resend-verification', [\App\Http\Controllers\Admin\AdminUserController::class, 'resendVerification'])->name('users.resend-verification');
+        Route::delete('/users/{user}/clear-activity', [\App\Http\Controllers\Admin\AdminUserController::class, 'clearActivity'])->name('users.clear-activity');
+
+        // CV Management
+        Route::get('/cvs', [\App\Http\Controllers\Admin\AdminCvController::class, 'index'])->name('cvs.index');
+        Route::get('/cvs/create', [\App\Http\Controllers\Admin\AdminCvController::class, 'create'])->name('cvs.create');
+        Route::post('/cvs', [\App\Http\Controllers\Admin\AdminCvController::class, 'store'])->name('cvs.store');
+        Route::post('/cvs/generate', [\App\Http\Controllers\Admin\AdminCvController::class, 'generate'])->name('cvs.generate');
+        Route::get('/cvs/{cv}', [\App\Http\Controllers\Admin\AdminCvController::class, 'show'])->name('cvs.show');
+        Route::get('/cvs/{cv}/edit', [\App\Http\Controllers\Admin\AdminCvController::class, 'edit'])->name('cvs.edit');
+        Route::put('/cvs/{cv}', [\App\Http\Controllers\Admin\AdminCvController::class, 'update'])->name('cvs.update');
+        Route::delete('/cvs/{cv}', [\App\Http\Controllers\Admin\AdminCvController::class, 'destroy'])->name('cvs.destroy');
+        Route::patch('/cvs/{cv}/toggle-primary', [\App\Http\Controllers\Admin\AdminCvController::class, 'togglePrimary'])->name('cvs.toggle-primary');
+        Route::post('/cvs/{cv}/duplicate', [\App\Http\Controllers\Admin\AdminCvController::class, 'duplicate'])->name('cvs.duplicate');
+        Route::get('/cvs/{cv}/download-pdf', [\App\Http\Controllers\Admin\AdminCvController::class, 'downloadPdf'])->name('cvs.download-pdf');
+        Route::post('/cvs/{cv}/suggestions', [\App\Http\Controllers\Admin\AdminCvController::class, 'generateSuggestions'])->name('cvs.suggestions');
+        Route::get('/users/{user}/job-applications', [\App\Http\Controllers\Admin\AdminCvController::class, 'getUserJobApplications'])->name('users.job-applications');
+
+        // Cover Letter Management
+        Route::get('/cover-letters', [\App\Http\Controllers\Admin\AdminCoverLetterController::class, 'index'])->name('cover-letters.index');
+        Route::get('/cover-letters/create', [\App\Http\Controllers\Admin\AdminCoverLetterController::class, 'create'])->name('cover-letters.create');
+        Route::post('/cover-letters', [\App\Http\Controllers\Admin\AdminCoverLetterController::class, 'store'])->name('cover-letters.store');
+        Route::post('/cover-letters/generate', [\App\Http\Controllers\Admin\AdminCoverLetterController::class, 'generate'])->name('cover-letters.generate');
+        Route::get('/cover-letters/{coverLetter}', [\App\Http\Controllers\Admin\AdminCoverLetterController::class, 'show'])->name('cover-letters.show');
+        Route::get('/cover-letters/{coverLetter}/edit', [\App\Http\Controllers\Admin\AdminCoverLetterController::class, 'edit'])->name('cover-letters.edit');
+        Route::put('/cover-letters/{coverLetter}', [\App\Http\Controllers\Admin\AdminCoverLetterController::class, 'update'])->name('cover-letters.update');
+        Route::delete('/cover-letters/{coverLetter}', [\App\Http\Controllers\Admin\AdminCoverLetterController::class, 'destroy'])->name('cover-letters.destroy');
+        Route::post('/cover-letters/{coverLetter}/duplicate', [\App\Http\Controllers\Admin\AdminCoverLetterController::class, 'duplicate'])->name('cover-letters.duplicate');
+        Route::post('/cover-letters/{coverLetter}/improve', [\App\Http\Controllers\Admin\AdminCoverLetterController::class, 'improve'])->name('cover-letters.improve');
+        Route::get('/users/{user}/resources', [\App\Http\Controllers\Admin\AdminCoverLetterController::class, 'getUserResources'])->name('users.resources');
+
         Route::get('/applications', [\App\Http\Controllers\Admin\AdminController::class, 'applications'])->name('applications');
         Route::get('/chat-sessions', [\App\Http\Controllers\Admin\AdminController::class, 'chatSessions'])->name('chat-sessions');
         Route::get('/templates', [\App\Http\Controllers\Admin\AdminController::class, 'templates'])->name('templates');

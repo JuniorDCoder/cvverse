@@ -15,7 +15,6 @@ import {
     Clock
 } from 'lucide-vue-next';
 import { computed, ref, onMounted } from 'vue';
-import ShimmerCard from '@/components/ShimmerCard.vue';
 import ShimmerStats from '@/components/ShimmerStats.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,9 +22,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { dashboard } from '@/routes';
-import { index as coverLettersIndex } from '@/routes/cover-letters';
-import { index as cvsIndex, create as cvCreate } from '@/routes/cvs';
 import { index as aiCvGeneratorIndex } from '@/routes/ai-cv-generator';
+import { index as coverLettersIndex } from '@/routes/cover-letters';
+import { create as cvCreate } from '@/routes/cvs';
 import { index as jobsIndex, create as jobCreate } from '@/routes/jobs';
 import { type BreadcrumbItem } from '@/types';
 
@@ -51,6 +50,32 @@ interface Props {
     stats: Stats;
     statusBreakdown: Record<string, number>;
     weeklyActivity: Record<string, number>;
+    planSummary: {
+        current_plan: {
+            id: number | null;
+            name: string;
+            slug: string;
+            status: 'guest' | 'free' | 'active';
+            is_free: boolean;
+            subscription_ends_at?: string | null;
+        };
+        usage: Array<{
+            key: string;
+            label: string;
+            used: number;
+            limit: number | null;
+            remaining: number | null;
+            reached: boolean;
+        }>;
+        features: {
+            ai_assistant?: boolean;
+            ai_cv_generation?: boolean;
+            ai_cover_letter_generation?: boolean;
+            ai_job_analysis?: boolean;
+            premium_templates?: boolean;
+        };
+        should_upgrade: boolean;
+    };
 }
 
 const props = defineProps<Props>();
@@ -103,6 +128,12 @@ const greeting = computed(() => {
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
 });
+
+const limitedUsage = computed(() => props.planSummary.usage.filter((item) => item.limit !== null));
+const canUseAiCvGenerator = computed(() => props.planSummary.features?.ai_cv_generation !== false);
+const canUseAiCoverLetters = computed(() => props.planSummary.features?.ai_cover_letter_generation !== false);
+const aiCvHref = computed(() => (canUseAiCvGenerator.value ? aiCvGeneratorIndex().url : '/pricing'));
+const coverLettersHref = computed(() => (canUseAiCoverLetters.value ? coverLettersIndex().url : '/pricing'));
 </script>
 
 <template>
@@ -113,8 +144,11 @@ const greeting = computed(() => {
             <!-- Welcome Section -->
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight">
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
                         {{ greeting }}, {{ user?.name?.split(' ')[0] }}! 👋
+                        <Badge v-if="planSummary.should_upgrade" variant="outline" class="border-amber-300 bg-amber-50 text-amber-700">
+                            Upgrade Recommended
+                        </Badge>
                     </h1>
                     <p class="text-muted-foreground mt-1">
                         Here's what's happening with your job search today.
@@ -122,9 +156,9 @@ const greeting = computed(() => {
                 </div>
                 <div class="flex gap-3">
                     <Button as-child class="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg shadow-purple-500/25">
-                        <Link :href="aiCvGeneratorIndex().url">
+                        <Link :href="aiCvHref">
                             <Sparkles class="h-4 w-4 mr-2" />
-                            Generate CV with AI
+                            {{ canUseAiCvGenerator ? 'Generate CV with AI' : 'Upgrade for AI CV' }}
                         </Link>
                     </Button>
                     <Button as-child>
@@ -141,6 +175,36 @@ const greeting = computed(() => {
                     </Button>
                 </div>
             </div>
+
+            <Card v-if="planSummary.should_upgrade" class="border-amber-200 bg-amber-50/60">
+                <CardHeader class="pb-3">
+                    <CardTitle class="text-base">
+                        Current Plan: {{ planSummary.current_plan.name }}
+                    </CardTitle>
+                    <CardDescription>
+                        Some features are limited on your current plan. Upgrade to unlock higher usage and premium AI capabilities.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent class="space-y-3">
+                    <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                        <div
+                            v-for="item in limitedUsage"
+                            :key="item.key"
+                            class="rounded-md border bg-background/80 px-3 py-2 text-sm"
+                        >
+                            <p class="font-medium">{{ item.label }}</p>
+                            <p class="text-muted-foreground">
+                                {{ item.used }} / {{ item.limit }}
+                            </p>
+                        </div>
+                    </div>
+                    <Button as-child class="w-full sm:w-auto">
+                        <Link href="/pricing">
+                            Upgrade Plan
+                        </Link>
+                    </Button>
+                </CardContent>
+            </Card>
 
             <!-- Stats Cards -->
             <div v-if="isLoading">
@@ -299,7 +363,7 @@ const greeting = computed(() => {
                         <CardContent class="space-y-3">
                             <!-- AI CV Generator - Featured -->
                             <Link
-                                :href="aiCvGeneratorIndex().url"
+                                :href="aiCvHref"
                                 class="flex items-center gap-3 p-3 rounded-lg border-2 border-primary/50 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30 hover:border-primary transition-all group"
                             >
                                 <div class="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 text-white">
@@ -307,8 +371,11 @@ const greeting = computed(() => {
                                 </div>
                                 <div class="flex-1">
                                     <p class="font-medium group-hover:text-primary transition-colors">Generate CV with AI</p>
-                                    <p class="text-xs text-muted-foreground">Describe yourself and let AI create your CV</p>
+                                    <p class="text-xs text-muted-foreground">
+                                        {{ canUseAiCvGenerator ? 'Describe yourself and let AI create your CV' : 'Upgrade required for AI CV generation' }}
+                                    </p>
                                 </div>
+                                <Badge v-if="!canUseAiCvGenerator" variant="outline" class="text-[10px]">Pro</Badge>
                                 <ArrowRight class="h-4 w-4 text-primary group-hover:translate-x-1 transition-all" />
                             </Link>
 
@@ -341,7 +408,7 @@ const greeting = computed(() => {
                             </Link>
 
                             <Link
-                                :href="coverLettersIndex().url"
+                                :href="coverLettersHref"
                                 class="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 hover:border-primary/50 transition-all group"
                             >
                                 <div class="p-2 rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-400">
@@ -349,8 +416,11 @@ const greeting = computed(() => {
                                 </div>
                                 <div class="flex-1">
                                     <p class="font-medium group-hover:text-primary transition-colors">Cover Letters</p>
-                                    <p class="text-xs text-muted-foreground">Generate with AI</p>
+                                    <p class="text-xs text-muted-foreground">
+                                        {{ canUseAiCoverLetters ? 'Generate with AI' : 'Upgrade required for AI generation' }}
+                                    </p>
                                 </div>
+                                <Badge v-if="!canUseAiCoverLetters" variant="outline" class="text-[10px]">Pro</Badge>
                                 <ArrowRight class="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                             </Link>
                         </CardContent>

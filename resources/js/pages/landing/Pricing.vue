@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { Link, usePage } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { router, usePage } from '@inertiajs/vue3';
+import { Check, Info } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import LandingLayout from '@/layouts/LandingLayout.vue';
-import { register, contact, services, dashboard } from '@/routes';
-import { router } from '@inertiajs/vue3';
+import { dashboard, register, subscription } from '@/routes';
 import payment from '@/routes/payment';
-import { Check, X, Info } from 'lucide-vue-next';
 
 interface Plan {
     id: number;
@@ -23,10 +22,20 @@ interface Plan {
     slug: string;
 }
 
+interface CurrentPlan {
+    id: number | null;
+    name: string;
+    slug: string;
+    status: 'guest' | 'free' | 'active';
+    is_free: boolean;
+    subscription_ends_at?: string | null;
+}
+
 const props = defineProps<{
     plans: Plan[];
     currency: string;
     country: string;
+    currentPlan: CurrentPlan;
 }>();
 
 const billingCycle = ref<'monthly' | 'yearly'>('monthly');
@@ -50,8 +59,25 @@ const filteredPlans = computed(() => {
     }).sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
 });
 
+const hasAuthenticatedUser = computed(() => !!usePage().props.auth.user);
+const isUserOnFreePlan = computed(() => props.currentPlan?.is_free === true);
+
+const isCurrentPlan = (plan: Plan) => {
+    if (props.currentPlan?.status === 'active' && props.currentPlan?.id) {
+        return props.currentPlan.id === plan.id;
+    }
+
+    return isUserOnFreePlan.value && parseFloat(plan.price) === 0;
+};
+
 const handleSubscribe = (plan: Plan) => {
-    if (usePage().props.auth.user) {
+    if (hasAuthenticatedUser.value) {
+        if (isCurrentPlan(plan)) {
+            router.visit(subscription().url);
+
+            return;
+        }
+
         if (parseFloat(plan.price) === 0) {
              // Ensure we handle free plan "subscription" logically, maybe just redirect to dashboard or a specific route
              // For now, let's assume checkout handles it (e.g. logs them in/upgrades them) or we just go to register
@@ -108,6 +134,12 @@ const faqs = [
                 <p class="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
                     Whether you're just starting out or ready to accelerate your career, we have a plan to help you land your dream job.
                 </p>
+
+                <div v-if="hasAuthenticatedUser" class="mb-8">
+                    <Badge variant="outline" class="border-primary/20 bg-primary/5 text-primary">
+                        Current Plan: {{ currentPlan.name }}
+                    </Badge>
+                </div>
                 
                 <!-- Billing Toggle -->
                 <div class="inline-flex items-center p-1 bg-muted/50 backdrop-blur-sm border rounded-full relative">
@@ -152,7 +184,10 @@ const faqs = [
                                         <CardTitle class="text-2xl font-bold mb-2">{{ plan.name }}</CardTitle>
                                         <CardDescription>{{ parseFloat(plan.price) === 0 ? 'Forever free' : 'Perfect for professionals' }}</CardDescription>
                                     </div>
-                                    <Badge v-if="parseFloat(plan.price) > 0" variant="secondary" class="bg-primary/10 text-primary border-primary/20">
+                                    <Badge v-if="isCurrentPlan(plan)" variant="default" class="bg-emerald-600 text-white">
+                                        Current Plan
+                                    </Badge>
+                                    <Badge v-else-if="parseFloat(plan.price) > 0" variant="secondary" class="bg-primary/10 text-primary border-primary/20">
                                         Popular
                                     </Badge>
                                 </div>
@@ -186,9 +221,14 @@ const faqs = [
                                 <Button 
                                     class="w-full h-12 text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all"
                                     :variant="parseFloat(plan.price) === 0 ? 'outline' : 'default'"
+                                    :disabled="isCurrentPlan(plan)"
                                     @click="handleSubscribe(plan)"
                                 >
-                                    {{ parseFloat(plan.price) === 0 ? 'Get Started' : 'Subscribe Now' }}
+                                    {{
+                                        isCurrentPlan(plan)
+                                            ? 'Current Plan'
+                                            : (parseFloat(plan.price) === 0 ? 'Get Started' : 'Subscribe Now')
+                                    }}
                                 </Button>
                             </CardFooter>
                         </Card>

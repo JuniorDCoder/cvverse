@@ -7,6 +7,7 @@ use App\Models\CoverLetter;
 use App\Models\Cv;
 use App\Models\JobApplication;
 use App\Services\GeminiService;
+use App\Services\PlanService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\Auth;
 class AiChatController extends Controller
 {
     public function __construct(
-        private readonly GeminiService $geminiService
+        private readonly GeminiService $geminiService,
+        private readonly PlanService $planService
     ) {}
 
     /**
@@ -22,6 +24,25 @@ class AiChatController extends Controller
      */
     public function chat(Request $request): JsonResponse
     {
+        $feature = $this->planService->checkFeature(Auth::user(), 'ai_assistant', 'AI assistant');
+        if (! $feature['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $feature['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
+
+        $usage = $this->planService->usage(Auth::user());
+        $aiLimit = $this->planService->checkLimit(Auth::user(), 'ai_messages_per_day', $usage['ai_messages_today'], 'AI messages');
+        if (! $aiLimit['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $aiLimit['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
+
         $request->validate([
             'message' => 'required|string',
             'history' => 'nullable|array',
@@ -73,6 +94,25 @@ class AiChatController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
+            $feature = $this->planService->checkFeature(Auth::user(), 'ai_assistant', 'AI assistant');
+            if (! $feature['allowed']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $feature['message'],
+                    'upgrade_url' => route('pricing'),
+                ], 403);
+            }
+
+            $usage = $this->planService->usage(Auth::user());
+            $aiLimit = $this->planService->checkLimit(Auth::user(), 'ai_messages_per_day', $usage['ai_messages_today'], 'AI messages');
+            if (! $aiLimit['allowed']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $aiLimit['message'],
+                    'upgrade_url' => route('pricing'),
+                ], 403);
+            }
+
             $validated = $request->validate([
                 'message' => 'required|string',
                 'session_id' => 'nullable|exists:chat_sessions,id',

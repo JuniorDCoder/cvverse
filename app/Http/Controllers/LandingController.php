@@ -6,6 +6,7 @@ use App\Models\PricingPlan;
 use App\Models\SiteSetting;
 use App\Models\Testimonial;
 use App\Services\GeoLocationService;
+use App\Services\PlanService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -38,7 +39,7 @@ class LandingController extends Controller
         ]);
     }
 
-    public function pricing(Request $request, GeoLocationService $geoService)
+    public function pricing(Request $request, GeoLocationService $geoService, PlanService $planService)
     {
         $ip = $request->ip();
         $country = $geoService->getCountryCode($ip);
@@ -60,6 +61,7 @@ class LandingController extends Controller
             'plans' => $plans,
             'country' => $country,
             'currency' => $currency,
+            'currentPlan' => $planService->currentPlanData($request->user()),
         ]);
     }
 }

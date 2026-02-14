@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\PlanService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -29,8 +30,6 @@ class HandleInertiaRequests extends Middleware
     /**
      * Handle Inertia requests.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function handle(Request $request, \Closure $next)
@@ -58,6 +57,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'plan' => app(PlanService::class)->currentPlanData($request->user()),
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

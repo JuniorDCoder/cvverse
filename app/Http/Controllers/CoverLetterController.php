@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CoverLetter;
 use App\Models\JobApplication;
 use App\Services\GeminiService;
+use App\Services\PlanService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,8 @@ use Inertia\Response;
 class CoverLetterController extends Controller
 {
     public function __construct(
-        private readonly GeminiService $geminiService
+        private readonly GeminiService $geminiService,
+        private readonly PlanService $planService
     ) {}
 
     /**
@@ -36,9 +38,13 @@ class CoverLetterController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
         $user = Auth::user();
+        $limit = $this->planService->checkLimit($user, 'cover_letters', $user->coverLetters()->count(), 'cover letters');
+        if (! $limit['allowed']) {
+            return redirect()->route('pricing')->with('error', $limit['message']);
+        }
 
         return Inertia::render('cover-letters/Create', [
             'tones' => CoverLetter::TONES,
@@ -56,6 +62,12 @@ class CoverLetterController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+        $limit = $this->planService->checkLimit($user, 'cover_letters', $user->coverLetters()->count(), 'cover letters');
+        if (! $limit['allowed']) {
+            return redirect()->route('pricing')->with('error', $limit['message']);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'content' => 'required|string',
@@ -63,7 +75,7 @@ class CoverLetterController extends Controller
             'job_application_id' => 'nullable|exists:job_applications,id',
         ]);
 
-        $coverLetter = Auth::user()->coverLetters()->create([
+        $coverLetter = $user->coverLetters()->create([
             'name' => $validated['name'],
             'content' => $validated['content'],
             'tone' => $validated['tone'] ?? 'professional',
@@ -85,6 +97,15 @@ class CoverLetterController extends Controller
      */
     public function generate(Request $request): JsonResponse
     {
+        $feature = $this->planService->checkFeature(Auth::user(), 'ai_cover_letter_generation', 'AI cover letter generation');
+        if (! $feature['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $feature['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
+
         $validated = $request->validate([
             'job_application_id' => 'required|exists:job_applications,id',
             'cv_id' => 'required|exists:cvs,id',
@@ -147,6 +168,14 @@ class CoverLetterController extends Controller
     public function improve(CoverLetter $coverLetter, Request $request): JsonResponse
     {
         $this->authorize('update', $coverLetter);
+        $feature = $this->planService->checkFeature($request->user(), 'ai_cover_letter_generation', 'AI cover letter improvement');
+        if (! $feature['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $feature['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
 
         $validated = $request->validate([
             'feedback' => 'nullable|string',

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
+import { Loader2, CreditCard } from 'lucide-vue-next';
 import { ref } from 'vue';
-import { Loader2, CreditCard, Smartphone } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,26 +14,46 @@ const props = defineProps<{
     plan: any;
 }>();
 
-const paymentMethod = ref('mobile_money');
 const successMessage = ref('');
 const errorMessage = ref('');
+const errorReference = ref('');
 
 const form = useForm({
     payer: '', // Phone number
     service: 'MTN', // MTN, ORANGE, etc.
 });
 
+const setFriendlyError = (rawError: string) => {
+    const traceIdMatch = rawError.match(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i);
+    errorReference.value = traceIdMatch ? traceIdMatch[0] : '';
+
+    const cleaned = rawError
+        .replace(/\(Ref:\s*[0-9a-f-]{36}\)/ig, '')
+        .replace(/Reference\s*[0-9a-f-]{36}\.?/ig, '')
+        .trim();
+
+    errorMessage.value = cleaned || 'Something went wrong. Please try again.';
+};
+
 const submit = () => {
     successMessage.value = '';
     errorMessage.value = '';
-    
+    errorReference.value = '';
+    form.clearErrors();
+
     form.post(payment.process(props.plan.id), {
-        onSuccess: () => {
-            successMessage.value = "Payment Initiated. Please check your phone to confirm the transaction.";
+        preserveScroll: true,
+        onSuccess: (page) => {
+            const flashSuccess = page.props?.flash?.success;
+            successMessage.value = typeof flashSuccess === 'string' && flashSuccess.trim().length > 0
+                ? flashSuccess
+                : 'Payment initiated. Please check your phone to confirm the transaction.';
         },
-        onError: () => {
-            errorMessage.value = "Something went wrong. Please try again.";
-        }
+        onError: (errors) => {
+            const serviceError = typeof errors.service === 'string' ? errors.service : '';
+            const payerError = typeof errors.payer === 'string' ? errors.payer : '';
+            setFriendlyError(serviceError || payerError || 'Something went wrong. Please try again.');
+        },
     });
 };
 </script>
@@ -65,7 +85,10 @@ const submit = () => {
                                         {{ successMessage }}
                                     </div>
                                     <div v-if="errorMessage" class="p-3 bg-red-100 text-red-700 rounded-md text-sm">
-                                        {{ errorMessage }}
+                                        <p>{{ errorMessage }}</p>
+                                        <p v-if="errorReference" class="mt-1 text-xs text-red-800/80">
+                                            Support reference: <span class="font-mono">{{ errorReference }}</span>
+                                        </p>
                                     </div>
 
                                     <div class="space-y-4">
@@ -88,12 +111,18 @@ const submit = () => {
                                                 <span class="font-medium">Orange Money</span>
                                             </div>
                                         </div>
+                                        <p v-if="form.errors.service" class="text-sm text-red-600">
+                                            {{ form.errors.service }}
+                                        </p>
                                     </div>
 
                                     <div class="space-y-2">
                                         <Label for="phone">Phone Number</Label>
                                         <Input id="phone" v-model="form.payer" placeholder="2376..." required />
                                         <p class="text-sm text-muted-foreground">Enter your Mobile Money number.</p>
+                                        <p v-if="form.errors.payer" class="text-sm text-red-600">
+                                            {{ form.errors.payer }}
+                                        </p>
                                     </div>
 
                                     <Button type="submit" class="w-full" :disabled="form.processing">

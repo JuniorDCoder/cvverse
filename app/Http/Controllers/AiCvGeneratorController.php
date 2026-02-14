@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Cv;
 use App\Models\CvTemplate;
 use App\Services\GeminiService;
+use App\Services\PlanService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,14 +17,20 @@ use Inertia\Response;
 class AiCvGeneratorController extends Controller
 {
     public function __construct(
-        private readonly GeminiService $geminiService
+        private readonly GeminiService $geminiService,
+        private readonly PlanService $planService
     ) {}
 
     /**
      * Display the AI CV Generator page
      */
-    public function index(): Response
+    public function index(): Response|RedirectResponse
     {
+        $feature = $this->planService->checkFeature(Auth::user(), 'ai_cv_generation', 'AI CV generator');
+        if (! $feature['allowed']) {
+            return redirect()->route('pricing')->with('error', $feature['message']);
+        }
+
         return Inertia::render('cvs/AiGenerator', [
             'templates' => CvTemplate::where('is_active', true)->pluck('slug'),
         ]);
@@ -34,6 +41,15 @@ class AiCvGeneratorController extends Controller
      */
     public function generate(Request $request): JsonResponse
     {
+        $feature = $this->planService->checkFeature(Auth::user(), 'ai_cv_generation', 'AI CV generator');
+        if (! $feature['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $feature['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
+
         $validated = $request->validate([
             'prompt' => 'required|string|max:5000',
             'context' => 'nullable|string|max:10000',
@@ -103,6 +119,15 @@ class AiCvGeneratorController extends Controller
      */
     public function refine(Request $request): JsonResponse
     {
+        $feature = $this->planService->checkFeature(Auth::user(), 'ai_cv_generation', 'AI CV refinement');
+        if (! $feature['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $feature['message'],
+                'upgrade_url' => route('pricing'),
+            ], 403);
+        }
+
         $validated = $request->validate([
             'message' => 'required|string|max:2000',
             'cv_data' => 'required|array',
@@ -135,14 +160,26 @@ class AiCvGeneratorController extends Controller
      */
     public function save(Request $request): RedirectResponse|JsonResponse
     {
+        $user = Auth::user();
+        $limit = $this->planService->checkLimit($user, 'cvs', $user->cvs()->count(), 'CVs');
+        if (! $limit['allowed']) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $limit['message'],
+                    'upgrade_url' => route('pricing'),
+                ], 403);
+            }
+
+            return redirect()->route('pricing')->with('error', $limit['message']);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'template' => 'required|string|exists:cv_templates,slug',
             'cv_data' => 'required|array',
             'is_primary' => 'nullable|boolean',
         ]);
-
-        $user = Auth::user();
 
         // If this is set as primary, unset other primary CVs
         if ($validated['is_primary'] ?? false) {
