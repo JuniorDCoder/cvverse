@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
+use App\Models\PricingPlan;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -238,6 +239,7 @@ class AdminUserController extends Controller
             'chatSessions' => $chatSessions,
             'activities' => $activities,
             'stats' => $stats,
+            'pricingPlans' => PricingPlan::where('is_active', true)->get(['id', 'name', 'slug', 'price', 'currency', 'interval']),
         ]);
     }
 
@@ -425,5 +427,25 @@ class AdminUserController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Change a user's pricing plan.
+     */
+    public function changePlan(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'pricing_plan_id' => ['nullable', 'exists:pricing_plans,id'],
+            'subscription_status' => ['required', 'string', 'in:active,inactive,cancelled,expired'],
+            'subscription_ends_at' => ['nullable', 'date'],
+        ]);
+
+        $user->update([
+            'pricing_plan_id' => $validated['pricing_plan_id'],
+            'subscription_status' => $validated['subscription_status'],
+            'subscription_ends_at' => $validated['subscription_ends_at'],
+        ]);
+
+        return redirect()->back()->with('success', 'User plan updated successfully.');
     }
 }

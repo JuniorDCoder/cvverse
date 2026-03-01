@@ -11,6 +11,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -615,6 +616,18 @@ class CvController extends Controller
             'updated_cv' => $cv->fresh(),
             'changes_summary' => $result['changes_summary'] ?? null,
         ]);
+    }
+
+    /**
+     * Preview CV as rendered HTML (for in-app preview).
+     */
+    public function previewHtml(Cv $cv): HttpResponse
+    {
+        $this->authorize('view', $cv);
+
+        $html = view('exports.cv-pdf', ['cv' => $cv])->render();
+
+        return response($html)->header('Content-Type', 'text/html');
     }
 
     /**

@@ -131,3 +131,54 @@ test('premium template download is allowed for premium users', function () {
 
     $response->assertSuccessful();
 });
+
+test('template preview route returns html for browser requests', function () {
+    $template = CvTemplate::factory()->create(['is_active' => true]);
+
+    $response = $this->get("/templates/{$template->id}/preview");
+
+    $response->assertSuccessful();
+    $response->assertHeader('Content-Type', 'text/html; charset=UTF-8');
+    expect($response->getContent())->toContain('<style>');
+});
+
+test('template preview route returns json when request expects json', function () {
+    $template = CvTemplate::factory()->create(['is_active' => true]);
+
+    $response = $this->getJson("/templates/{$template->id}/preview");
+
+    $response->assertSuccessful();
+    $response->assertJsonStructure([
+        'success',
+        'html',
+    ]);
+    $response->assertJson([
+        'success' => true,
+    ]);
+});
+
+test('template details page increments views count', function () {
+    $template = CvTemplate::factory()->create([
+        'is_active' => true,
+        'views_count' => 0,
+    ]);
+
+    $response = $this->get("/templates/{$template->id}");
+
+    $response->assertSuccessful();
+    expect($template->fresh()->views_count)->toBe(1);
+});
+
+test('template download returns docx and increments downloads count', function () {
+    $template = CvTemplate::factory()->create([
+        'is_active' => true,
+        'is_premium' => false,
+        'downloads_count' => 0,
+    ]);
+
+    $response = $this->get("/templates/{$template->id}/download");
+
+    $response->assertSuccessful();
+    expect($response->headers->get('content-disposition'))->toContain('.docx');
+    expect($template->fresh()->downloads_count)->toBe(1);
+});

@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\PricingPlan;
 use App\Models\SiteSetting;
+use App\Models\TeamMember;
 use App\Models\Testimonial;
 use App\Services\GeoLocationService;
 use App\Services\PlanService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
 use Laravel\Fortify\Features;
 
 class LandingController extends Controller
@@ -22,9 +24,14 @@ class LandingController extends Controller
         ]);
     }
 
-    public function about()
+    public function about(): Response
     {
-        return Inertia::render('landing/About');
+        return Inertia::render('landing/About', [
+            'stats' => SiteSetting::getStats(),
+            'milestones' => SiteSetting::getMilestones(),
+            'teamMembers' => TeamMember::active()->orderBy('sort_order')->get(),
+            'teamSectionVisible' => (bool) SiteSetting::getValue('team_section_visible', true),
+        ]);
     }
 
     public function services()
@@ -37,6 +44,27 @@ class LandingController extends Controller
         return Inertia::render('landing/Contact', [
             'contactData' => SiteSetting::getContactPageData(),
         ]);
+    }
+
+    public function privacyPolicy(): Response
+    {
+        return Inertia::render('landing/PrivacyPolicy', [
+            'content' => SiteSetting::getValue('privacy_policy', ''),
+            'siteName' => SiteSetting::getValue('site_name', 'CVverse'),
+        ]);
+    }
+
+    public function termsOfService(): Response
+    {
+        return Inertia::render('landing/TermsOfService', [
+            'content' => SiteSetting::getValue('terms_of_service', ''),
+            'siteName' => SiteSetting::getValue('site_name', 'CVverse'),
+        ]);
+    }
+
+    public function guides(): Response
+    {
+        return Inertia::render('landing/Guides');
     }
 
     public function pricing(Request $request, GeoLocationService $geoService, PlanService $planService)

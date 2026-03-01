@@ -25,6 +25,7 @@ interface CvTemplate {
     id: number;
     name: string;
     description: string | null;
+    image: string | null;
     thumbnail: string | null;
     category: string;
     is_premium: boolean;
@@ -87,6 +88,18 @@ const downloadTemplate = () => {
 
 const previewTemplate = () => {
     window.open(templatePreview.url(props.template.id), '_blank');
+};
+
+const resolveImageUrl = (path: string | null): string | null => {
+    if (!path) {
+        return null;
+    }
+
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/')) {
+        return path;
+    }
+
+    return `/storage/${path}`;
 };
 
 const categoryLabels: Record<string, string> = {
@@ -278,7 +291,7 @@ const categoryLabels: Record<string, string> = {
                                             size="lg"
                                         >
                                             <Download class="w-5 h-5 mr-2" />
-                                            Download Template
+                                            Download DOCX
                                         </Button>
                                     </div>
                                 </div>
@@ -369,10 +382,15 @@ const categoryLabels: Record<string, string> = {
                                 <CardContent class="p-0">
                                     <div class="relative aspect-[3/4] bg-gray-100 dark:bg-gray-700 overflow-hidden">
                                         <div 
-                                            v-if="related.thumbnail"
-                                            class="w-full h-full bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-                                            :style="{ backgroundImage: `url(${related.thumbnail})` }"
-                                        ></div>
+                                            v-if="resolveImageUrl(related.image || related.thumbnail)"
+                                            class="w-full h-full"
+                                        >
+                                            <img
+                                                :src="resolveImageUrl(related.image || related.thumbnail) || ''"
+                                                :alt="related.name"
+                                                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                            />
+                                        </div>
                                         <div 
                                             v-else
                                             class="w-full h-full flex items-center justify-center"

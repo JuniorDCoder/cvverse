@@ -27,10 +27,12 @@ import {
     MessageSquare,
     FolderKanban,
     ExternalLink,
+    Eye,
 } from 'lucide-vue-next';
 import { marked } from 'marked';
 import { ref, computed, watch } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import CvPreviewModal from '@/components/CvPreviewModal.vue';
 import ShareDialog from '@/components/cvs/ShareDialog.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -133,6 +135,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: props.cv.name, href: '#' },
 ];
 
+const showPreviewModal = ref(false);
 const isGeneratingSummary = ref(false);
 const isGettingSuggestions = ref(false);
 const suggestions = ref(props.cv.ai_suggestions);
@@ -323,6 +326,10 @@ const deleteCv = () => {
                     <Button v-if="cv.file_path" variant="outline" size="sm">
                         <Download class="h-4 w-4 mr-2" />
                         Download
+                    </Button>
+                    <Button variant="outline" size="sm" @click="showPreviewModal = true">
+                        <Eye class="h-4 w-4 mr-2" />
+                        Preview
                     </Button>
                     <div class="flex items-center gap-2">
                          <a :href="`/cvs/${cv.id}/export/pdf`" target="_blank">
@@ -740,5 +747,13 @@ const deleteCv = () => {
                 </div>
             </div>
         </div>
+
+        <!-- CV Preview Modal -->
+        <CvPreviewModal
+            v-model:open="showPreviewModal"
+            :preview-url="`/cvs/${cv.id}/preview-html`"
+            :download-url="`/cvs/${cv.id}/export/pdf`"
+            :title="`Preview: ${cv.name}`"
+        />
     </AppLayout>
 </template>

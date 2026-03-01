@@ -7,6 +7,50 @@ import { Separator } from '@/components/ui/separator';
 import LandingLayout from '@/layouts/LandingLayout.vue';
 import { contact, register, services } from '@/routes';
 
+interface Stats {
+    users_count: string;
+    cvs_created: string;
+    success_rate: string;
+    countries: string;
+    user_rating: string;
+}
+
+interface Milestone {
+    year: string;
+    title: string;
+    description: string;
+}
+
+interface TeamMember {
+    id: number;
+    name: string;
+    role: string;
+    bio: string | null;
+    photo_url: string | null;
+    initials: string;
+}
+
+const props = withDefaults(
+    defineProps<{
+        stats?: Stats;
+        milestones?: Milestone[];
+        teamMembers?: TeamMember[];
+        teamSectionVisible?: boolean;
+    }>(),
+    {
+        stats: () => ({
+            users_count: '500,000+',
+            cvs_created: '500K+',
+            success_rate: '95%',
+            countries: '150+',
+            user_rating: '4.9/5',
+        }),
+        milestones: () => [],
+        teamMembers: () => [],
+        teamSectionVisible: true,
+    },
+);
+
 const values = [
     {
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>`,
@@ -28,41 +72,6 @@ const values = [
         title: 'Quality Matters',
         description: 'We maintain high standards in everything we do, from code to customer service.',
     },
-];
-
-const team = [
-    {
-        name: 'Alex Morgan',
-        role: 'CEO & Founder',
-        avatar: 'AM',
-        bio: 'Former HR Director with 15+ years in talent acquisition. Passionate about helping people showcase their potential.',
-    },
-    {
-        name: 'Sarah Chen',
-        role: 'CTO',
-        avatar: 'SC',
-        bio: 'Ex-Google engineer specializing in AI/ML. Building the technology that powers smart CV creation.',
-    },
-    {
-        name: 'Michael Brooks',
-        role: 'Head of Design',
-        avatar: 'MB',
-        bio: 'Award-winning designer focused on creating beautiful, functional templates that get results.',
-    },
-    {
-        name: 'Emily Watson',
-        role: 'Head of Customer Success',
-        avatar: 'EW',
-        bio: 'Dedicated to ensuring every user has an exceptional experience with CVverse.',
-    },
-];
-
-const milestones = [
-    { year: '2020', title: 'CVverse Founded', description: 'Started with a vision to democratize professional CV creation.' },
-    { year: '2021', title: '100K Users', description: 'Reached our first major milestone with 100,000 registered users.' },
-    { year: '2022', title: 'AI Integration', description: 'Launched AI-powered content suggestions and writing assistance.' },
-    { year: '2023', title: '500K+ CVs Created', description: 'Celebrated half a million successful CV creations.' },
-    { year: '2024', title: 'Global Expansion', description: 'Expanded to support 50+ languages and 150+ countries.' },
 ];
 </script>
 
@@ -100,10 +109,10 @@ const milestones = [
                         </h2>
                         <div class="space-y-4 text-muted-foreground">
                             <p>
-                                CVverse was born from a simple observation: creating a professional CV shouldn't be complicated. Our founder, Alex Morgan, spent years watching talented candidates struggle to present themselves effectively on paper.
+                                CVverse was born from a simple observation: creating a professional CV shouldn't be complicated. We have spent years watching talented candidates struggle to present themselves effectively on paper.
                             </p>
                             <p>
-                                After seeing countless qualified professionals lose opportunities due to poorly formatted resumes, we set out to build a solution that levels the playing field. Today, CVverse helps hundreds of thousands of people worldwide create CVs that truly represent their potential.
+                                After seeing countless qualified professionals lose opportunities due to poorly formatted resumes, we set out to build a solution that levels the playing field. Today, CVverse will help hundreds of thousands of people worldwide create CVs that truly represent their potential.
                             </p>
                             <p>
                                 We combine cutting-edge AI technology with beautiful design templates, making it possible for anyone to create a standout CV in minutes, not hours.
@@ -115,19 +124,19 @@ const milestones = [
                         <div class="relative bg-card border rounded-xl p-8 shadow-lg">
                             <div class="grid grid-cols-2 gap-6">
                                 <div class="text-center">
-                                    <div class="text-4xl font-bold text-foreground mb-2">500K+</div>
+                                    <div class="text-4xl font-bold text-foreground mb-2">{{ stats.cvs_created }}</div>
                                     <div class="text-sm text-muted-foreground">CVs Created</div>
                                 </div>
                                 <div class="text-center">
-                                    <div class="text-4xl font-bold text-foreground mb-2">150+</div>
+                                    <div class="text-4xl font-bold text-foreground mb-2">{{ stats.countries }}</div>
                                     <div class="text-sm text-muted-foreground">Countries</div>
                                 </div>
                                 <div class="text-center">
-                                    <div class="text-4xl font-bold text-foreground mb-2">95%</div>
+                                    <div class="text-4xl font-bold text-foreground mb-2">{{ stats.success_rate }}</div>
                                     <div class="text-sm text-muted-foreground">Success Rate</div>
                                 </div>
                                 <div class="text-center">
-                                    <div class="text-4xl font-bold text-foreground mb-2">4.9</div>
+                                    <div class="text-4xl font-bold text-foreground mb-2">{{ stats.user_rating }}</div>
                                     <div class="text-sm text-muted-foreground">User Rating</div>
                                 </div>
                             </div>
@@ -218,7 +227,7 @@ const milestones = [
         </section>
 
         <!-- Team Section -->
-        <section class="py-20 lg:py-28">
+        <section v-if="teamSectionVisible && teamMembers.length > 0" class="py-20 lg:py-28">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center max-w-3xl mx-auto mb-16">
                     <Badge variant="outline" class="mb-4">Our Team</Badge>
@@ -232,13 +241,19 @@ const milestones = [
                 
                 <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Card 
-                        v-for="member in team" 
-                        :key="member.name"
+                        v-for="member in teamMembers" 
+                        :key="member.id"
                         class="text-center hover:shadow-lg transition-all duration-300"
                     >
                         <CardContent class="pt-8">
-                            <div class="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center mx-auto mb-4 text-white text-xl font-bold">
-                                {{ member.avatar }}
+                            <img
+                                v-if="member.photo_url"
+                                :src="member.photo_url"
+                                :alt="member.name"
+                                class="w-20 h-20 rounded-full object-cover mx-auto mb-4"
+                            />
+                            <div v-else class="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center mx-auto mb-4 text-white text-xl font-bold">
+                                {{ member.initials }}
                             </div>
                             <h3 class="font-semibold text-lg mb-1">{{ member.name }}</h3>
                             <p class="text-sm text-primary font-medium mb-3">{{ member.role }}</p>

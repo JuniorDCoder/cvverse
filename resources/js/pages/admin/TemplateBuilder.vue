@@ -16,6 +16,8 @@ import {
     Undo,
     Redo,
     Copy,
+    Sparkles,
+    Loader2,
 } from 'lucide-vue-next';
 import { ref, computed, watch, onMounted } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -27,10 +29,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { useToast } from '@/composables/useToast';
 import { dashboard as adminDashboard, templates as adminTemplates } from '@/routes/admin';
-import { store as templateStore, update as templateUpdate, edit as templateEdit } from '@/routes/admin/template-builder';
+import { store as templateStore, update as templateUpdate, edit as templateEdit, generateWithAi } from '@/routes/admin/template-builder';
 
 interface Section {
     id: string;
@@ -93,6 +103,52 @@ const saving = ref(false);
 const activeTab = ref('design');
 const previewMode = ref(false);
 const draggedSection = ref<number | null>(null);
+
+// AI Generation
+const showAiDialog = ref(false);
+const aiPrompt = ref('');
+const aiCategory = ref('professional');
+const aiGenerating = ref(false);
+
+const generateFromAi = async () => {
+    if (!aiPrompt.value.trim()) {
+        addToast({ type: 'error', title: 'Error', message: 'Please enter a description for the template.' });
+        return;
+    }
+    aiGenerating.value = true;
+    try {
+        const response = await fetch(generateWithAi.url(), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1] || ''),
+            },
+            body: JSON.stringify({ prompt: aiPrompt.value, category: aiCategory.value }),
+        });
+        const data = await response.json();
+        if (data.success && data.template) {
+            const t = data.template;
+            form.value.name = t.name || form.value.name;
+            form.value.description = t.description || form.value.description;
+            form.value.category = t.category || form.value.category;
+            if (t.styles) form.value.styles = { ...form.value.styles, ...t.styles };
+            if (t.layout) form.value.layout = { ...form.value.layout, ...t.layout };
+            if (t.sections && Array.isArray(t.sections)) form.value.sections = t.sections;
+            if (t.html_content) form.value.html_content = t.html_content;
+            if (t.css_content !== undefined) form.value.css_content = t.css_content;
+            showAiDialog.value = false;
+            aiPrompt.value = '';
+            addToast({ type: 'success', title: 'Generated', message: 'AI template generated! Review and save when ready.' });
+        } else {
+            addToast({ type: 'error', title: 'Error', message: data.message || 'Failed to generate template.' });
+        }
+    } catch {
+        addToast({ type: 'error', title: 'Error', message: 'Network error. Please try again.' });
+    } finally {
+        aiGenerating.value = false;
+    }
+};
 
 // Image handling
 const imageFile = ref<File | null>(null);
@@ -427,6 +483,10 @@ const breadcrumbs = computed(() => [
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
+                        <Button variant="outline" @click="showAiDialog = true" class="bg-gradient-to-r from-violet-500/10 to-purple-500/10 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:from-violet-500/20 hover:to-purple-500/20">
+                            <Sparkles class="h-4 w-4 mr-2" />
+                            Generate with AI
+                        </Button>
                         <Button variant="outline" @click="previewMode = !previewMode">
                             <Eye class="h-4 w-4 mr-2" />
                             {{ previewMode ? 'Edit' : 'Preview' }}
@@ -780,6 +840,67 @@ const breadcrumbs = computed(() => [
                 </div>
             </div>
         </div>
+
+        <!-- AI Generation Dialog -->
+        <Dialog v-model:open="showAiDialog">
+            <DialogContent class="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle class="flex items-center gap-2">
+                        <Sparkles class="h-5 w-5 text-violet-500" />
+                        Generate Template with AI
+                    </DialogTitle>
+                    <DialogDescription>
+                        Describe the template you want and AI will generate the design, styles, layout, and HTML for you.
+                    </DialogDescription>
+                </DialogHeader>
+                <div class="space-y-4 py-4">
+                    <div class="space-y-2">
+                        <Label>Category</Label>
+                        <Select v-model="aiCategory">
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="(label, value) in categories"
+                                    :key="value"
+                                    :value="value"
+                                >
+                                    {{ label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div class="space-y-2">
+                        <Label>Describe Your Template *</Label>
+                        <Textarea
+                            v-model="aiPrompt"
+                            placeholder="e.g., A modern minimalist template with a dark sidebar, clean typography using Inter font, blue accent colors. The header should be split-style with name on the left and contact details on the right..."
+                            rows="5"
+                            @keydown.meta.enter="generateFromAi"
+                        />
+                        <p class="text-xs text-muted-foreground">Be specific about colors, layout, fonts, and style for best results.</p>
+                    </div>
+                    <div class="rounded-lg bg-violet-50 dark:bg-violet-950/30 p-3 space-y-1">
+                        <p class="text-xs font-medium text-violet-700 dark:text-violet-300">Tips for better results:</p>
+                        <ul class="text-xs text-violet-600 dark:text-violet-400 space-y-0.5 list-disc list-inside">
+                            <li>Mention specific colors (e.g., "navy blue header")</li>
+                            <li>Describe the layout (e.g., "two-column with sidebar")</li>
+                            <li>Specify the style (e.g., "minimalist", "creative", "corporate")</li>
+                            <li>Include font preferences (e.g., "serif headings, sans-serif body")</li>
+                        </ul>
+                    </div>
+                </div>
+                <DialogFooter class="gap-2">
+                    <Button variant="outline" @click="showAiDialog = false" :disabled="aiGenerating">Cancel</Button>
+                    <Button @click="generateFromAi" :disabled="aiGenerating || !aiPrompt.trim()" class="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
+                        <Loader2 v-if="aiGenerating" class="h-4 w-4 mr-2 animate-spin" />
+                        <Sparkles v-else class="h-4 w-4 mr-2" />
+                        {{ aiGenerating ? 'Generating...' : 'Generate Template' }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>
 

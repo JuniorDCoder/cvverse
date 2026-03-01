@@ -176,6 +176,39 @@ class SiteSetting extends Model
     }
 
     /**
+     * Get milestones for the about page.
+     *
+     * @return array<int, array{year: string, title: string, description: string}>
+     */
+    public static function getMilestones(): array
+    {
+        $milestones = static::getValue('milestones', null);
+
+        if (is_array($milestones) && count($milestones) > 0) {
+            return $milestones;
+        }
+
+        return [
+            ['year' => '2020', 'title' => 'CVverse Founded', 'description' => 'Started with a vision to democratize professional CV creation.'],
+            ['year' => '2021', 'title' => '100K Users', 'description' => 'Reached our first major milestone with 100,000 registered users.'],
+            ['year' => '2022', 'title' => 'AI Integration', 'description' => 'Launched AI-powered content suggestions and writing assistance.'],
+            ['year' => '2023', 'title' => '500K+ CVs Created', 'description' => 'Celebrated half a million successful CV creations.'],
+            ['year' => '2024', 'title' => 'Global Expansion', 'description' => 'Expanded to support 50+ languages and 150+ countries.'],
+        ];
+    }
+
+    /**
+     * Get legal page content.
+     */
+    public static function getLegalSettings(): array
+    {
+        return [
+            'privacy_policy' => static::getValue('privacy_policy', ''),
+            'terms_of_service' => static::getValue('terms_of_service', ''),
+        ];
+    }
+
+    /**
      * Get all settings for admin settings page.
      */
     public static function getAllForAdmin(): array
@@ -186,6 +219,8 @@ class SiteSetting extends Model
             'social' => static::getSocialLinks(),
             'email' => static::getEmailSettings(),
             'stats' => static::getStats(),
+            'milestones' => static::getMilestones(),
+            'legal' => static::getLegalSettings(),
         ];
     }
 

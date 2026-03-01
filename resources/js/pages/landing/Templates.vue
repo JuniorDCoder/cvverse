@@ -59,16 +59,16 @@ const props = defineProps<{
 }>();
 
 const search = ref(props.filters.search || '');
-const category = ref(props.filters.category || '');
-const type = ref(props.filters.type || '');
+const category = ref(props.filters.category || 'all');
+const type = ref(props.filters.type || 'all');
 const sort = ref(props.filters.sort || 'popular');
 
 const applyFilters = () => {
     router.get(templatesIndex.url({
         query: {
             search: search.value || undefined,
-            category: category.value || undefined,
-            type: type.value || undefined,
+            category: category.value === 'all' ? undefined : category.value,
+            type: type.value === 'all' ? undefined : type.value,
             sort: sort.value || undefined,
         }
     }), {}, { preserveState: true });
@@ -76,14 +76,14 @@ const applyFilters = () => {
 
 const clearFilters = () => {
     search.value = '';
-    category.value = '';
-    type.value = '';
+    category.value = 'all';
+    type.value = 'all';
     sort.value = 'popular';
     router.get(templatesIndex.url());
 };
 
 const hasActiveFilters = computed(() => {
-    return search.value || category.value || type.value;
+    return search.value || category.value !== 'all' || type.value !== 'all';
 });
 
 const formatNumber = (num: number) => {
@@ -150,7 +150,7 @@ const formatNumber = (num: number) => {
                             <SelectValue placeholder="Category" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All Categories</SelectItem>
+                            <SelectItem value="all">All Categories</SelectItem>
                             <SelectItem 
                                 v-for="(label, value) in categories" 
                                 :key="value" 
@@ -166,7 +166,7 @@ const formatNumber = (num: number) => {
                             <SelectValue placeholder="Type" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All</SelectItem>
+                            <SelectItem value="all">All</SelectItem>
                             <SelectItem value="free">Free</SelectItem>
                             <SelectItem value="premium">Premium</SelectItem>
                         </SelectContent>
@@ -252,7 +252,7 @@ const formatNumber = (num: number) => {
                             </Badge>
 
                             <!-- Hover Overlay -->
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-6">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-6">
                                 <div class="flex gap-2">
                                     <Button size="sm" variant="secondary" as-child>
                                         <Link :href="templateShow.url(template.id)">

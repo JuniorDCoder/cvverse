@@ -1,14 +1,22 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { Save, Globe, Mail, Share2, BarChart3 } from 'lucide-vue-next';
+import { ref } from 'vue';
+import { Save, Globe, Mail, Share2, BarChart3, Milestone, Plus, Trash2, Scale } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { updateGeneral, updateContact, updateSocial, updateEmail, updateStats } from '@/actions/App/Http/Controllers/Admin/SiteSettingController';
+import { updateGeneral, updateContact, updateSocial, updateEmail, updateStats, updateMilestones, updateLegal } from '@/actions/App/Http/Controllers/Admin/SiteSettingController';
+
+interface MilestoneItem {
+    year: string;
+    title: string;
+    description: string;
+}
 
 interface Settings {
     general: {
@@ -46,6 +54,11 @@ interface Settings {
         success_rate: string;
         countries: string;
         user_rating: string;
+    };
+    milestones: MilestoneItem[];
+    legal: {
+        privacy_policy: string;
+        terms_of_service: string;
     };
 }
 
@@ -125,6 +138,37 @@ const statsForm = useForm({
 
 const saveStatsSettings = () => {
     statsForm.put(updateStats.url(), {
+        preserveScroll: true,
+    });
+};
+
+// Milestones Form
+const milestonesForm = useForm({
+    milestones: props.settings.milestones.map((m: MilestoneItem) => ({ ...m })),
+});
+
+const addMilestone = () => {
+    milestonesForm.milestones.push({ year: '', title: '', description: '' });
+};
+
+const removeMilestone = (index: number) => {
+    milestonesForm.milestones.splice(index, 1);
+};
+
+const saveMilestonesSettings = () => {
+    milestonesForm.put(updateMilestones.url(), {
+        preserveScroll: true,
+    });
+};
+
+// Legal Settings Form
+const legalForm = useForm({
+    privacy_policy: props.settings.legal.privacy_policy,
+    terms_of_service: props.settings.legal.terms_of_service,
+});
+
+const saveLegalSettings = () => {
+    legalForm.put(updateLegal.url(), {
         preserveScroll: true,
     });
 };
@@ -369,6 +413,132 @@ const saveStatsSettings = () => {
                             <Button type="submit" :disabled="statsForm.processing">
                                 <Save class="h-4 w-4 mr-2" />
                                 {{ statsForm.processing ? 'Saving...' : 'Save Changes' }}
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
+
+                <!-- Milestones Settings -->
+                <Card class="lg:col-span-2">
+                    <CardHeader>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <Milestone class="h-5 w-5 text-primary" />
+                                <CardTitle>Milestones</CardTitle>
+                            </div>
+                            <Button type="button" variant="outline" size="sm" @click="addMilestone">
+                                <Plus class="h-4 w-4 mr-1" />
+                                Add Milestone
+                            </Button>
+                        </div>
+                        <CardDescription>Journey milestones displayed on the About page timeline</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form @submit.prevent="saveMilestonesSettings" class="space-y-4">
+                            <div v-if="milestonesForm.milestones.length === 0" class="text-center py-8 text-muted-foreground">
+                                No milestones yet. Click "Add Milestone" to create one.
+                            </div>
+                            <div
+                                v-for="(milestone, index) in milestonesForm.milestones"
+                                :key="index"
+                                class="flex items-start gap-4 p-4 border rounded-lg"
+                            >
+                                <div class="grid sm:grid-cols-3 gap-4 flex-1">
+                                    <div class="space-y-2">
+                                        <Label :for="`milestone_year_${index}`">Year</Label>
+                                        <Input
+                                            :id="`milestone_year_${index}`"
+                                            v-model="milestone.year"
+                                            placeholder="2024"
+                                        />
+                                        <p v-if="milestonesForm.errors[`milestones.${index}.year`]" class="text-sm text-destructive">
+                                            {{ milestonesForm.errors[`milestones.${index}.year`] }}
+                                        </p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label :for="`milestone_title_${index}`">Title</Label>
+                                        <Input
+                                            :id="`milestone_title_${index}`"
+                                            v-model="milestone.title"
+                                            placeholder="Company Founded"
+                                        />
+                                        <p v-if="milestonesForm.errors[`milestones.${index}.title`]" class="text-sm text-destructive">
+                                            {{ milestonesForm.errors[`milestones.${index}.title`] }}
+                                        </p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label :for="`milestone_desc_${index}`">Description</Label>
+                                        <Input
+                                            :id="`milestone_desc_${index}`"
+                                            v-model="milestone.description"
+                                            placeholder="A brief description of this milestone"
+                                        />
+                                        <p v-if="milestonesForm.errors[`milestones.${index}.description`]" class="text-sm text-destructive">
+                                            {{ milestonesForm.errors[`milestones.${index}.description`] }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    class="shrink-0 text-destructive hover:text-destructive mt-7"
+                                    @click="removeMilestone(index)"
+                                >
+                                    <Trash2 class="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <Button type="submit" :disabled="milestonesForm.processing || milestonesForm.milestones.length === 0">
+                                <Save class="h-4 w-4 mr-2" />
+                                {{ milestonesForm.processing ? 'Saving...' : 'Save Changes' }}
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
+
+                <!-- Legal Pages -->
+                <Card class="lg:col-span-2">
+                    <CardHeader>
+                        <div class="flex items-center gap-2">
+                            <Scale class="h-5 w-5 text-primary" />
+                            <CardTitle>Legal Pages</CardTitle>
+                        </div>
+                        <CardDescription>Privacy Policy and Terms of Service content displayed on the website</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form @submit.prevent="saveLegalSettings" class="space-y-6">
+                            <div class="space-y-2">
+                                <Label for="privacy_policy">Privacy Policy</Label>
+                                <Textarea
+                                    id="privacy_policy"
+                                    v-model="legalForm.privacy_policy"
+                                    placeholder="Enter your privacy policy content..."
+                                    rows="10"
+                                    class="font-mono text-sm"
+                                />
+                                <p class="text-xs text-muted-foreground">Supports plain text. Write your full privacy policy here.</p>
+                                <p v-if="legalForm.errors.privacy_policy" class="text-sm text-destructive">
+                                    {{ legalForm.errors.privacy_policy }}
+                                </p>
+                            </div>
+                            <Separator />
+                            <div class="space-y-2">
+                                <Label for="terms_of_service">Terms of Service</Label>
+                                <Textarea
+                                    id="terms_of_service"
+                                    v-model="legalForm.terms_of_service"
+                                    placeholder="Enter your terms of service content..."
+                                    rows="10"
+                                    class="font-mono text-sm"
+                                />
+                                <p class="text-xs text-muted-foreground">Supports plain text. Write your full terms of service here.</p>
+                                <p v-if="legalForm.errors.terms_of_service" class="text-sm text-destructive">
+                                    {{ legalForm.errors.terms_of_service }}
+                                </p>
+                            </div>
+                            <Button type="submit" :disabled="legalForm.processing">
+                                <Save class="h-4 w-4 mr-2" />
+                                {{ legalForm.processing ? 'Saving...' : 'Save Changes' }}
                             </Button>
                         </form>
                     </CardContent>

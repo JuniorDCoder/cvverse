@@ -106,7 +106,7 @@
                     <div class="item-header">
                         <span class="item-title">{{ $exp['title'] }}</span>
                         <span class="item-date">
-                            {{ $exp['start_date'] }} - {{ $exp['current'] ? 'Present' : ($exp['end_date'] ?? '') }}
+                            {{ $exp['start_date'] }} - {{ ($exp['current'] ?? false) ? 'Present' : ($exp['end_date'] ?? '') }}
                         </span>
                     </div>
                     <div class="item-subtitle">{{ $exp['company'] }} @if(isset($exp['location'])) - {{ $exp['location'] }} @endif</div>

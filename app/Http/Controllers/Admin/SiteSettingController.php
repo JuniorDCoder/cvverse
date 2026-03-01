@@ -148,4 +148,41 @@ class SiteSettingController extends Controller
 
         return back()->with('success', 'Stats updated successfully.');
     }
+
+    /**
+     * Update milestones settings.
+     */
+    public function updateMilestones(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'milestones' => ['required', 'array', 'min:1'],
+            'milestones.*.year' => ['required', 'string', 'max:10'],
+            'milestones.*.title' => ['required', 'string', 'max:100'],
+            'milestones.*.description' => ['required', 'string', 'max:500'],
+        ]);
+
+        SiteSetting::setValue('milestones', $validated['milestones'], 'json', 'milestones');
+
+        SiteSetting::clearGroupCache('milestones');
+
+        return back()->with('success', 'Milestones updated successfully.');
+    }
+
+    /**
+     * Update legal pages content (privacy policy, terms of service).
+     */
+    public function updateLegal(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'privacy_policy' => ['required', 'string'],
+            'terms_of_service' => ['required', 'string'],
+        ]);
+
+        SiteSetting::setValue('privacy_policy', $validated['privacy_policy'], 'string', 'legal');
+        SiteSetting::setValue('terms_of_service', $validated['terms_of_service'], 'string', 'legal');
+
+        SiteSetting::clearGroupCache('legal');
+
+        return back()->with('success', 'Legal pages updated successfully.');
+    }
 }

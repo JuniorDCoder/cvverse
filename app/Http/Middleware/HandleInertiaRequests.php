@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SiteSetting;
 use App\Services\PlanService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -65,6 +66,7 @@ class HandleInertiaRequests extends Middleware
                 'info' => $request->session()->get('info'),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'socialLinks' => fn () => array_filter(SiteSetting::getSocialLinks(), fn ($url) => ! empty($url)),
         ];
     }
 }

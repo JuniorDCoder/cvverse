@@ -146,6 +146,11 @@ const adminPlatformItems: NavItem[] = [
         icon: CreditCard,
     },
     {
+        title: 'Newsletter',
+        href: '/admin/newsletter',
+        icon: Mail,
+    },
+    {
         title: 'Settings',
         href: '/admin/settings',
         icon: Settings,

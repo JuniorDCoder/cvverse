@@ -18,6 +18,7 @@ import {
     MoreHorizontal,
     History,
     Loader2,
+    Eye,
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,7 @@ import {
     TabsTrigger,
 } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/AppLayout.vue';
+import CvPreviewModal from '@/components/CvPreviewModal.vue';
 import { useToast } from '@/composables/useToast';
 
 interface PersonalInfo {
@@ -120,6 +122,7 @@ const props = defineProps<Props>();
 const { toast } = useToast();
 
 const showDeleteDialog = ref(false);
+const showPreviewModal = ref(false);
 const showSuggestionsDialog = ref(false);
 const suggestions = ref<Record<string, unknown> | null>(null);
 const loadingSuggestions = ref(false);
@@ -243,6 +246,10 @@ const formatDate = (date: string) => {
                     <Button variant="outline" @click="generateSuggestions">
                         <Sparkles class="mr-2 h-4 w-4" />
                         AI Suggestions
+                    </Button>
+                    <Button variant="outline" @click="showPreviewModal = true">
+                        <Eye class="mr-2 h-4 w-4" />
+                        Preview
                     </Button>
                     <Button variant="outline" @click="downloadPdf">
                         <Download class="mr-2 h-4 w-4" />
@@ -668,5 +675,13 @@ const formatDate = (date: string) => {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        <!-- CV Preview Modal -->
+        <CvPreviewModal
+            v-model:open="showPreviewModal"
+            :preview-url="`/admin/cvs/${cv.id}/preview-html`"
+            :download-url="`/admin/cvs/${cv.id}/download-pdf`"
+            :title="`Preview: ${cv.name}`"
+        />
     </AppLayout>
 </template>

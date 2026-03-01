@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\CvTemplate;
+use App\Services\GeminiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -228,6 +229,107 @@ class TemplateBuilderController extends Controller
         return Inertia::render('admin/TemplatePreview', [
             'template' => $template,
             'sampleData' => $this->getSampleCvData(),
+        ]);
+    }
+
+    /**
+     * Generate a template using AI based on a prompt.
+     */
+    public function generateWithAi(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'prompt' => 'required|string|max:2000',
+            'category' => 'nullable|string',
+        ]);
+
+        $gemini = app(GeminiService::class);
+
+        $category = $validated['category'] ?? 'professional';
+        $categories = implode(', ', array_keys(CvTemplate::categories()));
+
+        $prompt = <<<PROMPT
+You are a professional CV/resume template designer. Based on the user's description, generate a complete CV template configuration.
+
+User's request: {$validated['prompt']}
+Preferred category: {$category}
+Available categories: {$categories}
+
+Return a valid JSON object with exactly these fields:
+- name: A creative template name (string, max 60 chars)
+- description: A marketing description of the template (string, 1-2 sentences)
+- category: One of [{$categories}]
+- styles: An object with these exact keys:
+  - primaryColor: hex color (e.g. "#2563eb")
+  - secondaryColor: hex color
+  - backgroundColor: hex color (usually "#ffffff")
+  - textColor: hex color
+  - headingColor: hex color
+  - accentColor: hex color
+  - fontFamily: CSS font stack (e.g. "Inter, sans-serif")
+  - headingFont: CSS font stack
+  - fontSize: "12px" or "14px" or "16px"
+  - lineHeight: number as string (e.g. "1.6")
+  - spacing: "compact" or "normal" or "relaxed"
+  - borderRadius: CSS value (e.g. "4px")
+- layout: An object with:
+  - columns: 1 or 2
+  - headerStyle: "centered" or "left" or "split"
+  - sidebarPosition: "none" or "left" or "right"
+  - sectionStyle: "simple" or "boxed" or "underlined" or "accent"
+- sections: An array of objects, each with:
+  - id: one of ["header", "summary", "experience", "education", "skills", "projects", "certifications", "languages"]
+  - name: Display name for the section
+  - enabled: boolean
+  - order: integer starting from 0
+- html_content: A complete standalone HTML template for a CV. Use placeholder variables like {{full_name}}, {{email}}, {{phone}}, {{location}}, {{linkedin}}, {{website}}, {{summary}}, {{experience}}, {{education}}, {{skills}}, {{certifications}}, {{languages}}, {{interests}}. Include inline CSS styling that matches the styles object. Make it print-friendly and visually professional.
+- css_content: Additional CSS rules for the template (can be empty string if all styles are inline)
+
+Make the design creative, modern, and visually appealing based on the user's request. The HTML template should be a complete A4-sized document.
+
+Return ONLY valid JSON, no markdown or explanation.
+PROMPT;
+
+        $response = $gemini->generateContent($prompt);
+        $text = $gemini->extractText($response);
+
+        if (! $text) {
+            return response()->json([
+                'success' => false,
+                'message' => 'AI failed to generate template. Please try again.',
+            ], 422);
+        }
+
+        // Parse JSON from response
+        $parsed = null;
+        if (preg_match('/```json\s*(\{.*\})\s*```/s', $text, $matches)) {
+            $text = $matches[1];
+        } elseif (preg_match('/(\{.*\})/s', $text, $matches)) {
+            $text = $matches[1];
+        }
+
+        try {
+            $parsed = json_decode(trim($text), true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'AI returned invalid data. Please try again with a clearer description.',
+            ], 422);
+        }
+
+        // Validate required keys exist
+        $requiredKeys = ['name', 'styles', 'sections'];
+        foreach ($requiredKeys as $key) {
+            if (! isset($parsed[$key])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "AI response missing required field: {$key}. Please try again.",
+                ], 422);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'template' => $parsed,
         ]);
     }
 

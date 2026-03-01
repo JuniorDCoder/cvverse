@@ -30,6 +30,20 @@ Route::post('/payment/process/{plan}', [\App\Http\Controllers\PaymentController:
 
 Route::get('/contact', [LandingController::class, 'contact'])->name('contact');
 
+Route::get('/privacy-policy', [LandingController::class, 'privacyPolicy'])->name('privacy-policy');
+
+Route::get('/terms-of-service', [LandingController::class, 'termsOfService'])->name('terms-of-service');
+
+Route::get('/guides', [LandingController::class, 'guides'])->name('guides');
+
+// Newsletter Routes (public)
+Route::prefix('newsletter')->name('newsletter.')->group(function () {
+    Route::post('/subscribe', [\App\Http\Controllers\NewsletterController::class, 'subscribe'])->name('subscribe');
+    Route::get('/unsubscribe/{token}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribe'])->name('unsubscribe');
+    Route::post('/resubscribe', [\App\Http\Controllers\NewsletterController::class, 'resubscribe'])->name('resubscribe');
+    Route::post('/check', [\App\Http\Controllers\NewsletterController::class, 'checkSubscription'])->name('check');
+});
+
 // Public Template Routes
 Route::prefix('templates')->name('templates.')->group(function () {
     Route::get('/', [TemplateController::class, 'index'])->name('index');
@@ -38,6 +52,7 @@ Route::prefix('templates')->name('templates.')->group(function () {
     Route::get('/{template}/preview', [TemplateController::class, 'preview'])->name('preview');
     Route::post('/{template}/preview', [TemplateController::class, 'previewWithData'])->name('preview.with-data');
     Route::get('/{template}/download', [TemplateController::class, 'download'])->name('download');
+    Route::post('/{template}/download-pdf', [TemplateController::class, 'downloadPdf'])->name('download-pdf');
     Route::post('/{template}/save-as-cv', [TemplateController::class, 'saveAsCv'])
         ->middleware(['auth', 'verified'])
         ->name('save-as-cv');
@@ -94,6 +109,7 @@ Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
     Route::get('cvs/{cv}/versions', [CvController::class, 'versions'])->name('cvs.versions');
     Route::post('cvs/{cv}/restore/{versionId}', [CvController::class, 'restoreVersion'])->name('cvs.restore-version');
     Route::post('cvs/{cv}/chat', [CvController::class, 'chat'])->name('cvs.chat');
+    Route::get('cvs/{cv}/preview-html', [CvController::class, 'previewHtml'])->name('cvs.preview-html');
     Route::get('cvs/{cv}/export/pdf', [CvController::class, 'exportPdf'])->name('cvs.export.pdf');
     Route::get('cvs/{cv}/export/docx', [CvController::class, 'exportDocx'])->name('cvs.export.docx');
 
@@ -121,6 +137,7 @@ Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
         Route::patch('/users/{user}/toggle-role', [\App\Http\Controllers\Admin\AdminUserController::class, 'toggleRole'])->name('users.toggle-role');
         Route::post('/users/{user}/resend-verification', [\App\Http\Controllers\Admin\AdminUserController::class, 'resendVerification'])->name('users.resend-verification');
         Route::delete('/users/{user}/clear-activity', [\App\Http\Controllers\Admin\AdminUserController::class, 'clearActivity'])->name('users.clear-activity');
+        Route::patch('/users/{user}/change-plan', [\App\Http\Controllers\Admin\AdminUserController::class, 'changePlan'])->name('users.change-plan');
 
         // CV Management
         Route::get('/cvs', [\App\Http\Controllers\Admin\AdminCvController::class, 'index'])->name('cvs.index');
@@ -133,6 +150,7 @@ Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
         Route::delete('/cvs/{cv}', [\App\Http\Controllers\Admin\AdminCvController::class, 'destroy'])->name('cvs.destroy');
         Route::patch('/cvs/{cv}/toggle-primary', [\App\Http\Controllers\Admin\AdminCvController::class, 'togglePrimary'])->name('cvs.toggle-primary');
         Route::post('/cvs/{cv}/duplicate', [\App\Http\Controllers\Admin\AdminCvController::class, 'duplicate'])->name('cvs.duplicate');
+        Route::get('/cvs/{cv}/preview-html', [\App\Http\Controllers\Admin\AdminCvController::class, 'previewHtml'])->name('cvs.preview-html');
         Route::get('/cvs/{cv}/download-pdf', [\App\Http\Controllers\Admin\AdminCvController::class, 'downloadPdf'])->name('cvs.download-pdf');
         Route::post('/cvs/{cv}/suggestions', [\App\Http\Controllers\Admin\AdminCvController::class, 'generateSuggestions'])->name('cvs.suggestions');
         Route::get('/users/{user}/job-applications', [\App\Http\Controllers\Admin\AdminCvController::class, 'getUserJobApplications'])->name('users.job-applications');
@@ -168,6 +186,7 @@ Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
             Route::patch('/{template}/toggle-status', [TemplateBuilderController::class, 'toggleStatus'])->name('toggle-status');
             Route::post('/{template}/duplicate', [TemplateBuilderController::class, 'duplicate'])->name('duplicate');
             Route::get('/{template}/preview', [TemplateBuilderController::class, 'preview'])->name('preview');
+            Route::post('/generate-with-ai', [TemplateBuilderController::class, 'generateWithAi'])->name('generate-with-ai');
         });
 
         // Testimonials & Site Settings Routes
@@ -188,6 +207,28 @@ Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
             Route::put('/social', [\App\Http\Controllers\Admin\SiteSettingController::class, 'updateSocial'])->name('social');
             Route::put('/email', [\App\Http\Controllers\Admin\SiteSettingController::class, 'updateEmail'])->name('email');
             Route::put('/stats', [\App\Http\Controllers\Admin\SiteSettingController::class, 'updateStats'])->name('stats');
+            Route::put('/milestones', [\App\Http\Controllers\Admin\SiteSettingController::class, 'updateMilestones'])->name('milestones');
+            Route::put('/legal', [\App\Http\Controllers\Admin\SiteSettingController::class, 'updateLegal'])->name('legal');
+        });
+
+        // Team Members Routes
+        Route::prefix('team-members')->name('team-members.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\TeamMemberController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Admin\TeamMemberController::class, 'store'])->name('store');
+            Route::post('/{teamMember}', [\App\Http\Controllers\Admin\TeamMemberController::class, 'update'])->name('update');
+            Route::delete('/{teamMember}', [\App\Http\Controllers\Admin\TeamMemberController::class, 'destroy'])->name('destroy');
+            Route::patch('/{teamMember}/toggle-status', [\App\Http\Controllers\Admin\TeamMemberController::class, 'toggleStatus'])->name('toggle-status');
+            Route::put('/section-visibility', [\App\Http\Controllers\Admin\TeamMemberController::class, 'toggleSectionVisibility'])->name('section-visibility');
+        });
+
+        // Newsletter Management
+        Route::prefix('newsletter')->name('newsletter.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\AdminNewsletterController::class, 'index'])->name('index');
+            Route::delete('/{subscriber}', [\App\Http\Controllers\Admin\AdminNewsletterController::class, 'destroy'])->name('destroy');
+            Route::get('/compose', [\App\Http\Controllers\Admin\AdminNewsletterController::class, 'compose'])->name('compose');
+            Route::post('/generate-email', [\App\Http\Controllers\Admin\AdminNewsletterController::class, 'generateEmail'])->name('generate-email');
+            Route::post('/send', [\App\Http\Controllers\Admin\AdminNewsletterController::class, 'send'])->name('send');
+            Route::get('/export', [\App\Http\Controllers\Admin\AdminNewsletterController::class, 'export'])->name('export');
         });
     });
 

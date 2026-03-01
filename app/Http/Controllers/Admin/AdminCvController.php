@@ -391,6 +391,16 @@ class AdminCvController extends Controller
     }
 
     /**
+     * Preview CV as rendered HTML (for in-app preview).
+     */
+    public function previewHtml(Cv $cv): HttpResponse
+    {
+        $html = view('exports.cv-pdf', ['cv' => $cv])->render();
+
+        return response($html)->header('Content-Type', 'text/html');
+    }
+
+    /**
      * Toggle primary status for a CV.
      */
     public function togglePrimary(Cv $cv): RedirectResponse

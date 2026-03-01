@@ -11,6 +11,9 @@ use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\PhpWord;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class TemplateController extends Controller
 {
@@ -65,6 +68,7 @@ class TemplateController extends Controller
         }
 
         $template->incrementViews();
+        $template->refresh();
 
         $relatedTemplates = CvTemplate::active()
             ->where('id', '!=', $template->id)
@@ -96,8 +100,8 @@ class TemplateController extends Controller
             ? Auth::user()->cvs()->select('id', 'name', 'personal_info', 'experience', 'education', 'skills', 'summary')->get()
             : collect();
 
-        // Generate initial preview with empty/sample data
-        $previewHtml = $this->generateCvHtml($template, $this->getEmptyCvData());
+        // Generate initial preview with sample data so users can see the template
+        $previewHtml = $this->generateCvHtml($template, $this->getSampleCvData());
 
         return Inertia::render('templates/Editor', [
             'template' => $template,
@@ -109,9 +113,9 @@ class TemplateController extends Controller
     }
 
     /**
-     * Download template as PDF with user data.
+     * Download template as DOCX with user data.
      */
-    public function download(Request $request, CvTemplate $template): HttpResponse|JsonResponse
+    public function download(Request $request, CvTemplate $template): BinaryFileResponse|JsonResponse
     {
         if (! $template->is_active) {
             abort(404);
@@ -125,23 +129,117 @@ class TemplateController extends Controller
             ], 403);
         }
 
-        $validated = $request->validate([
-            'cv_data' => 'required|array',
-            'cv_data.personal_info' => 'required|array',
-        ]);
+        $cvData = $this->resolveCvDataForDownload($request);
 
-        $cvData = $validated['cv_data'];
+        $phpWord = new PhpWord;
+        $section = $phpWord->addSection();
 
-        // Generate HTML with user data
-        $html = $this->generateCvHtml($template, $cvData);
+        $personalInfo = $cvData['personal_info'] ?? [];
 
-        // Generate PDF
-        $pdf = Pdf::loadHTML($html);
-        $pdf->setPaper('a4');
+        $section->addText($personalInfo['full_name'] ?? '', ['bold' => true, 'size' => 16]);
+        $section->addText($personalInfo['email'] ?? '');
+        $section->addText($personalInfo['phone'] ?? '');
+        $section->addText($personalInfo['location'] ?? '');
+
+        if (! empty($cvData['summary'])) {
+            $section->addTextBreak(1);
+            $section->addText('Summary', ['bold' => true, 'size' => 14]);
+            $section->addText($cvData['summary']);
+        }
+
+        if (! empty($cvData['experience']) && is_array($cvData['experience'])) {
+            $section->addTextBreak(1);
+            $section->addText('Experience', ['bold' => true, 'size' => 14]);
+
+            foreach ($cvData['experience'] as $experience) {
+                $section->addTextBreak(1);
+                $section->addText($experience['title'] ?? '', ['bold' => true]);
+                $section->addText(($experience['company'] ?? '').' - '.($experience['location'] ?? ''));
+                $section->addText(($experience['start_date'] ?? '').' - '.($experience['end_date'] ?? ''));
+                $section->addText($experience['description'] ?? '');
+            }
+        }
+
+        if (! empty($cvData['education']) && is_array($cvData['education'])) {
+            $section->addTextBreak(1);
+            $section->addText('Education', ['bold' => true, 'size' => 14]);
+
+            foreach ($cvData['education'] as $education) {
+                $section->addTextBreak(1);
+                $section->addText($education['degree'] ?? '', ['bold' => true]);
+                $section->addText($education['institution'] ?? '');
+                $section->addText($education['graduation_date'] ?? '');
+            }
+        }
+
+        if (! empty($cvData['skills']) && is_array($cvData['skills'])) {
+            $section->addTextBreak(1);
+            $section->addText('Skills', ['bold' => true, 'size' => 14]);
+
+            $skills = collect($cvData['skills'])
+                ->map(fn ($skill) => is_string($skill) ? $skill : ($skill['name'] ?? ''))
+                ->filter(fn ($skill) => $skill !== '')
+                ->values()
+                ->all();
+
+            if (! empty($skills)) {
+                $section->addText(implode(', ', $skills));
+            }
+        }
+
+        if (! empty($cvData['languages']) && is_array($cvData['languages'])) {
+            $section->addTextBreak(1);
+            $section->addText('Languages', ['bold' => true, 'size' => 14]);
+
+            foreach ($cvData['languages'] as $language) {
+                $section->addText(($language['language'] ?? '').' - '.($language['proficiency'] ?? ''));
+            }
+        }
+
+        if (! empty($cvData['certifications']) && is_array($cvData['certifications'])) {
+            $section->addTextBreak(1);
+            $section->addText('Certifications', ['bold' => true, 'size' => 14]);
+
+            foreach ($cvData['certifications'] as $certification) {
+                $section->addTextBreak(1);
+                $section->addText($certification['name'] ?? '', ['bold' => true]);
+                if (! empty($certification['issuer'])) {
+                    $section->addText($certification['issuer']);
+                }
+                if (! empty($certification['date'])) {
+                    $section->addText($certification['date']);
+                }
+            }
+        }
+
+        $writer = IOFactory::createWriter($phpWord, 'Word2007');
+        $tempFile = tempnam(sys_get_temp_dir(), 'template-cv-');
+        $writer->save($tempFile);
 
         $template->incrementDownloads();
 
-        $filename = 'cv-'.now()->format('Y-m-d').'.pdf';
+        $filename = ($template->slug ?: 'cv-template').'-'.now()->format('Y-m-d').'.docx';
+
+        return response()->download($tempFile, $filename)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Download template CV as PDF with user data.
+     */
+    public function downloadPdf(Request $request, CvTemplate $template): \Illuminate\Http\Response
+    {
+        if (! $template->is_active) {
+            abort(404);
+        }
+
+        $cvData = $this->resolveEditorFormData($request);
+        $html = $this->generateCvHtml($template, $cvData);
+
+        $pdf = Pdf::loadHTML($html)->setPaper('a4');
+
+        $template->incrementDownloads();
+
+        $filename = ($template->slug ?: 'cv-template').'-'.now()->format('Y-m-d').'.pdf';
 
         return $pdf->download($filename);
     }
@@ -166,16 +264,55 @@ class TemplateController extends Controller
             ], 403);
         }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'cv_data' => 'required|array',
-            'cv_data.personal_info' => 'required|array',
-        ]);
-
-        $cvData = $validated['cv_data'];
+        // Accept both structured cv_data or flat editor form data
+        if ($request->has('cv_data')) {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'cv_data' => 'required|array',
+                'cv_data.personal_info' => 'required|array',
+            ]);
+            $cvData = $request->input('cv_data');
+            $cvName = $request->input('name');
+        } else {
+            $request->validate([
+                'full_name' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
+            ]);
+            $cvData = [
+                'personal_info' => [
+                    'full_name' => $request->input('full_name', ''),
+                    'email' => $request->input('email', ''),
+                    'phone' => $request->input('phone', ''),
+                    'location' => $request->input('address', ''),
+                    'linkedin' => $request->input('linkedin', ''),
+                    'website' => $request->input('website', ''),
+                ],
+                'summary' => $request->input('summary', ''),
+                'experience' => collect($request->input('experiences', []))->map(fn ($exp) => [
+                    'title' => $exp['job_title'] ?? '',
+                    'company' => $exp['company'] ?? '',
+                    'location' => $exp['location'] ?? '',
+                    'start_date' => $exp['start_date'] ?? '',
+                    'end_date' => ! empty($exp['current']) ? 'Present' : ($exp['end_date'] ?? ''),
+                    'description' => $exp['description'] ?? '',
+                ])->toArray(),
+                'education' => collect($request->input('education', []))->map(fn ($edu) => [
+                    'degree' => $edu['degree'] ?? '',
+                    'institution' => $edu['school'] ?? '',
+                    'location' => $edu['location'] ?? '',
+                    'graduation_date' => $edu['end_date'] ?? '',
+                    'gpa' => $edu['gpa'] ?? '',
+                    'description' => $edu['description'] ?? '',
+                ])->toArray(),
+                'skills' => array_values(array_filter($request->input('skills', []), fn ($s) => ! empty($s))),
+                'certifications' => collect($request->input('certifications', []))->filter(fn ($c) => ! empty($c['name']))->values()->toArray(),
+                'languages' => collect($request->input('languages', []))->filter(fn ($l) => ! empty($l['language']))->values()->toArray(),
+            ];
+            $cvName = $request->input('cv_name', $request->input('full_name', 'My CV')).' - '.$template->name;
+        }
 
         $cv = Auth::user()->cvs()->create([
-            'name' => $validated['name'],
+            'name' => $cvName,
             'template' => $template->slug,
             'personal_info' => $cvData['personal_info'] ?? [],
             'experience' => $cvData['experience'] ?? [],
@@ -201,14 +338,22 @@ class TemplateController extends Controller
      */
     public function preview(Request $request, CvTemplate $template): JsonResponse|HttpResponse
     {
-        $cvData = $request->input('cv_data', $this->getEmptyCvData());
+        if (! $template->is_active) {
+            abort(404);
+        }
+
+        $cvData = $request->input('cv_data', $this->getSampleCvData());
 
         $html = $this->generateCvHtml($template, $cvData);
 
-        return response()->json([
-            'success' => true,
-            'html' => $html,
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+            ]);
+        }
+
+        return response($html)->header('Content-Type', 'text/html');
     }
 
     /**
@@ -348,7 +493,7 @@ class TemplateController extends Controller
             }
 
             $html .= match ($section['id']) {
-                'header' => $this->renderHeaderSection($cvData),
+                'header', 'personal' => $this->renderHeaderSection($cvData),
                 'summary' => $this->renderSummarySection($cvData),
                 'experience' => $this->renderExperienceSection($cvData),
                 'education' => $this->renderEducationSection($cvData),
@@ -616,6 +761,60 @@ class TemplateController extends Controller
         ];
     }
 
+    private function resolveCvDataForDownload(Request $request): array
+    {
+        $cvData = $request->input('cv_data');
+
+        if (is_string($cvData)) {
+            $decoded = json_decode($cvData, true);
+            if (is_array($decoded)) {
+                $cvData = $decoded;
+            }
+        }
+
+        if (is_array($cvData) && ! empty($cvData)) {
+            return $cvData;
+        }
+
+        $rawEditorData = $request->input('data');
+        if (is_string($rawEditorData)) {
+            $editorData = json_decode($rawEditorData, true);
+            if (is_array($editorData)) {
+                return [
+                    'personal_info' => [
+                        'full_name' => $editorData['full_name'] ?? '',
+                        'email' => $editorData['email'] ?? '',
+                        'phone' => $editorData['phone'] ?? '',
+                        'location' => $editorData['address'] ?? '',
+                        'linkedin' => $editorData['linkedin'] ?? '',
+                        'website' => $editorData['website'] ?? '',
+                    ],
+                    'summary' => $editorData['summary'] ?? '',
+                    'experience' => collect($editorData['experiences'] ?? [])->map(fn ($exp) => [
+                        'title' => $exp['job_title'] ?? '',
+                        'company' => $exp['company'] ?? '',
+                        'location' => $exp['location'] ?? '',
+                        'start_date' => $exp['start_date'] ?? '',
+                        'end_date' => ! empty($exp['current']) ? 'Present' : ($exp['end_date'] ?? ''),
+                        'description' => $exp['description'] ?? '',
+                    ])->toArray(),
+                    'education' => collect($editorData['education'] ?? [])->map(fn ($edu) => [
+                        'degree' => $edu['degree'] ?? '',
+                        'institution' => $edu['school'] ?? '',
+                        'location' => $edu['location'] ?? '',
+                        'graduation_date' => $edu['end_date'] ?? '',
+                        'description' => $edu['description'] ?? '',
+                    ])->toArray(),
+                    'skills' => array_filter($editorData['skills'] ?? [], fn ($skill) => ! empty($skill)),
+                    'certifications' => collect($editorData['certifications'] ?? [])->filter(fn ($cert) => ! empty($cert['name']))->toArray(),
+                    'languages' => collect($editorData['languages'] ?? [])->filter(fn ($lang) => ! empty($lang['language']))->toArray(),
+                ];
+            }
+        }
+
+        return $this->getSampleCvData();
+    }
+
     private function userHasPremiumAccess(): bool
     {
         if (! Auth::check()) {
@@ -623,5 +822,42 @@ class TemplateController extends Controller
         }
 
         return Auth::user()->hasPremiumAccess();
+    }
+
+    /**
+     * Resolve CV data from flat editor form fields.
+     */
+    private function resolveEditorFormData(Request $request): array
+    {
+        return [
+            'personal_info' => [
+                'full_name' => $request->input('full_name', ''),
+                'email' => $request->input('email', ''),
+                'phone' => $request->input('phone', ''),
+                'location' => $request->input('address', ''),
+                'linkedin' => $request->input('linkedin', ''),
+                'website' => $request->input('website', ''),
+            ],
+            'summary' => $request->input('summary', ''),
+            'experience' => collect($request->input('experiences', []))->map(fn ($exp) => [
+                'title' => $exp['job_title'] ?? '',
+                'company' => $exp['company'] ?? '',
+                'location' => $exp['location'] ?? '',
+                'start_date' => $exp['start_date'] ?? '',
+                'end_date' => ! empty($exp['current']) ? 'Present' : ($exp['end_date'] ?? ''),
+                'description' => $exp['description'] ?? '',
+            ])->toArray(),
+            'education' => collect($request->input('education', []))->map(fn ($edu) => [
+                'degree' => $edu['degree'] ?? '',
+                'institution' => $edu['school'] ?? '',
+                'location' => $edu['location'] ?? '',
+                'graduation_date' => $edu['end_date'] ?? '',
+                'gpa' => $edu['gpa'] ?? '',
+                'description' => $edu['description'] ?? '',
+            ])->toArray(),
+            'skills' => array_values(array_filter($request->input('skills', []), fn ($s) => ! empty($s))),
+            'certifications' => collect($request->input('certifications', []))->filter(fn ($c) => ! empty($c['name']))->values()->toArray(),
+            'languages' => collect($request->input('languages', []))->filter(fn ($l) => ! empty($l['language']))->values()->toArray(),
+        ];
     }
 }

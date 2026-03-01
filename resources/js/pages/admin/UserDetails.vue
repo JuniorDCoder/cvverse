@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { useToast } from '@/composables/useToast';
+import { changePlan } from '@/actions/App/Http/Controllers/Admin/AdminUserController';
 
 interface Cv {
     id: number;
@@ -112,6 +113,14 @@ interface Props {
         total_applications: number;
         total_chat_sessions: number;
     };
+    pricingPlans: Array<{
+        id: number;
+        name: string;
+        slug: string;
+        price: string;
+        currency: string;
+        interval: string;
+    }>;
 }
 
 const props = defineProps<Props>();
@@ -122,6 +131,14 @@ const { success, error } = useToast();
 const showEditModal = ref(false);
 const showDeleteDialog = ref(false);
 const showClearActivityDialog = ref(false);
+const showPlanDialog = ref(false);
+
+// Plan form
+const planForm = useForm({
+    pricing_plan_id: props.user.pricing_plan?.id?.toString() || 'none',
+    subscription_status: props.user.subscription_status || 'inactive',
+    subscription_ends_at: props.user.subscription_ends_at || '',
+});
 
 // Edit form
 const editForm = useForm({
@@ -217,6 +234,31 @@ const clearUserActivity = (type: string) => {
         },
         onError: () => {
             error(`Failed to clear user ${type}.`, 'Error');
+        },
+    });
+};
+
+const openPlanDialog = () => {
+    planForm.pricing_plan_id = props.user.pricing_plan?.id?.toString() || 'none';
+    planForm.subscription_status = props.user.subscription_status || 'inactive';
+    planForm.subscription_ends_at = props.user.subscription_ends_at || '';
+    planForm.clearErrors();
+    showPlanDialog.value = true;
+};
+
+const submitPlanChange = () => {
+    planForm.transform((data) => ({
+        ...data,
+        pricing_plan_id: data.pricing_plan_id && data.pricing_plan_id !== 'none' ? Number(data.pricing_plan_id) : null,
+        subscription_ends_at: data.subscription_ends_at || null,
+    })).patch(changePlan.url(props.user.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showPlanDialog.value = false;
+            success('User plan updated successfully!', 'Success');
+        },
+        onError: () => {
+            error('Failed to update user plan.', 'Error');
         },
     });
 };
@@ -381,6 +423,49 @@ const getActivityIcon = (type: string) => {
                     <div v-if="user.bio" class="mt-6 pt-6 border-t">
                         <h3 class="font-medium mb-2">Bio</h3>
                         <p class="text-muted-foreground">{{ user.bio }}</p>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <!-- Subscription & Plan Card -->
+            <Card>
+                <CardHeader class="flex flex-row items-center justify-between pb-3">
+                    <div>
+                        <CardTitle class="text-base flex items-center gap-2">
+                            <CreditCard class="h-4 w-4" />
+                            Subscription & Plan
+                        </CardTitle>
+                        <CardDescription>Manage this user's pricing plan and subscription</CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" @click="openPlanDialog">
+                        <Pencil class="h-3.5 w-3.5 mr-1.5" />
+                        Change Plan
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    <div class="grid sm:grid-cols-3 gap-4">
+                        <div class="p-3 rounded-lg bg-muted/50">
+                            <p class="text-xs text-muted-foreground mb-1">Current Plan</p>
+                            <p class="font-semibold">{{ user.pricing_plan?.name || 'No Plan (Free)' }}</p>
+                        </div>
+                        <div class="p-3 rounded-lg bg-muted/50">
+                            <p class="text-xs text-muted-foreground mb-1">Status</p>
+                            <Badge
+                                variant="outline"
+                                :class="{
+                                    'border-green-500 text-green-600': user.subscription_status === 'active',
+                                    'border-yellow-500 text-yellow-600': user.subscription_status === 'cancelled',
+                                    'border-red-500 text-red-600': user.subscription_status === 'expired',
+                                    'border-gray-500 text-gray-600': !user.subscription_status || user.subscription_status === 'inactive',
+                                }"
+                            >
+                                {{ user.subscription_status ? user.subscription_status.charAt(0).toUpperCase() + user.subscription_status.slice(1) : 'Inactive' }}
+                            </Badge>
+                        </div>
+                        <div class="p-3 rounded-lg bg-muted/50">
+                            <p class="text-xs text-muted-foreground mb-1">Ends At</p>
+                            <p class="font-medium">{{ user.subscription_ends_at || 'N/A' }}</p>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -728,6 +813,77 @@ const getActivityIcon = (type: string) => {
                     <Button variant="destructive" @click="clearUserActivity('cvs')">
                         <Trash2 class="h-4 w-4 mr-2" />
                         Clear Data
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <!-- Change Plan Dialog -->
+        <Dialog v-model:open="showPlanDialog">
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle class="flex items-center gap-2">
+                        <CreditCard class="h-5 w-5" />
+                        Change User Plan
+                    </DialogTitle>
+                    <DialogDescription>
+                        Update {{ user.name }}'s subscription plan, status, and expiry.
+                    </DialogDescription>
+                </DialogHeader>
+                <div class="space-y-4 py-4">
+                    <div class="space-y-2">
+                        <Label>Pricing Plan</Label>
+                        <Select v-model="planForm.pricing_plan_id">
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a plan..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">No Plan (Free)</SelectItem>
+                                <SelectItem
+                                    v-for="plan in pricingPlans"
+                                    :key="plan.id"
+                                    :value="plan.id.toString()"
+                                >
+                                    {{ plan.name }} — {{ plan.price }} {{ plan.currency }}/{{ plan.interval }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p v-if="planForm.errors.pricing_plan_id" class="text-xs text-destructive">{{ planForm.errors.pricing_plan_id }}</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label>Subscription Status</Label>
+                        <Select v-model="planForm.subscription_status">
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="inactive">Inactive</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                                <SelectItem value="expired">Expired</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p v-if="planForm.errors.subscription_status" class="text-xs text-destructive">{{ planForm.errors.subscription_status }}</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label>Subscription Ends At</Label>
+                        <Input
+                            type="date"
+                            v-model="planForm.subscription_ends_at"
+                            placeholder="Leave empty for indefinite"
+                        />
+                        <p class="text-xs text-muted-foreground">Leave empty for an indefinite (lifetime) subscription.</p>
+                        <p v-if="planForm.errors.subscription_ends_at" class="text-xs text-destructive">{{ planForm.errors.subscription_ends_at }}</p>
+                    </div>
+                </div>
+                <DialogFooter class="gap-2">
+                    <DialogClose as-child>
+                        <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button @click="submitPlanChange" :disabled="planForm.processing">
+                        {{ planForm.processing ? 'Saving...' : 'Update Plan' }}
                     </Button>
                 </DialogFooter>
             </DialogContent>
