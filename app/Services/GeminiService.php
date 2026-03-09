@@ -15,15 +15,19 @@ class GeminiService
 
     private string $baseUrl;
 
+    /** @var array<int, string> */
+    private array $fallbackModels;
+
     public function __construct()
     {
         $this->apiKey = config('gemini.api_key');
         $this->model = config('gemini.model');
         $this->baseUrl = config('gemini.base_url');
+        $this->fallbackModels = config('gemini.fallback_models', []);
     }
 
     /**
-     * Generate content using Gemini AI
+     * Generate content using Gemini AI, with automatic model fallback on outages.
      *
      * @param  array<int, array<string, mixed>>  $contents
      * @return array<string, mixed>|null
@@ -37,8 +41,6 @@ class GeminiService
 
             return null;
         }
-
-        $url = "{$this->baseUrl}/models/{$this->model}:generateContent?key={$this->apiKey}";
 
         $payload = [
             'contents' => empty($contents) ? [
@@ -62,21 +64,71 @@ class GeminiService
             ],
         ];
 
+        // Build ordered list: primary model first, then fallbacks (excluding duplicates)
+        $modelsToTry = array_unique(array_merge([$this->model], $this->fallbackModels));
+        $deadline = microtime(true) + 30; // 30-second total time budget
+
+        foreach ($modelsToTry as $model) {
+            $remaining = $deadline - microtime(true);
+
+            if ($remaining <= 2) {
+                Log::warning('Gemini fallback time budget exhausted');
+                break;
+            }
+
+            $result = $this->tryModel($model, $payload, (int) min($remaining, 15));
+
+            if ($result !== null) {
+                return $result;
+            }
+        }
+
+        Log::error('All Gemini models exhausted — no successful response', [
+            'models_tried' => $modelsToTry,
+        ]);
+
+        return null;
+    }
+
+    /**
+     * Attempt a single model request. Returns the response array on success, or null on a retryable/fatal failure.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function tryModel(string $model, array $payload, int $timeout = 15): ?array
+    {
+        $url = "{$this->baseUrl}/models/{$model}:generateContent?key={$this->apiKey}";
+
         try {
-            $response = Http::timeout(60)->post($url, $payload);
+            $response = Http::timeout($timeout)->post($url, $payload);
 
             if ($response->successful()) {
                 return $response->json();
             }
 
-            Log::error('Gemini API error', [
-                'status' => $response->status(),
+            $status = $response->status();
+
+            Log::warning("Gemini model '{$model}' failed", [
+                'status' => $status,
+                'body' => $response->body(),
+            ]);
+
+            // Retryable status codes — fall through to next model
+            if (in_array($status, [404, 429, 500, 502, 503, 504])) {
+                return null;
+            }
+
+            // Non-retryable errors (e.g. 400, 401, 403) — stop immediately
+            Log::error("Gemini API non-retryable error on model '{$model}'", [
+                'status' => $status,
                 'body' => $response->body(),
             ]);
 
             return null;
         } catch (\Exception $e) {
-            Log::error('Gemini API exception', ['message' => $e->getMessage()]);
+            Log::warning("Gemini model '{$model}' exception — trying next model", [
+                'message' => $e->getMessage(),
+            ]);
 
             return null;
         }
@@ -115,7 +167,7 @@ class GeminiService
         } catch (\JsonException $e) {
             Log::error('Failed to parse Gemini JSON response', [
                 'error' => $e->getMessage(),
-                'text' => $text
+                'text' => $text,
             ]);
 
             return null;
