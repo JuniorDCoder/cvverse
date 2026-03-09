@@ -29,6 +29,7 @@ Route::post('/payment/process/{plan}', [\App\Http\Controllers\PaymentController:
     ->middleware('auth');
 
 Route::get('/contact', [LandingController::class, 'contact'])->name('contact');
+Route::post('/contact', [\App\Http\Controllers\ContactController::class, 'store'])->name('contact.store');
 
 Route::get('/privacy-policy', [LandingController::class, 'privacyPolicy'])->name('privacy-policy');
 
@@ -229,6 +230,21 @@ Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
             Route::post('/generate-email', [\App\Http\Controllers\Admin\AdminNewsletterController::class, 'generateEmail'])->name('generate-email');
             Route::post('/send', [\App\Http\Controllers\Admin\AdminNewsletterController::class, 'send'])->name('send');
             Route::get('/export', [\App\Http\Controllers\Admin\AdminNewsletterController::class, 'export'])->name('export');
+        });
+
+        // Finance Management
+        Route::prefix('finance')->name('finance.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\AdminFinanceController::class, 'index'])->name('index');
+            Route::post('/withdraw', [\App\Http\Controllers\Admin\AdminFinanceController::class, 'withdraw'])->name('withdraw');
+            Route::get('/balance', [\App\Http\Controllers\Admin\AdminFinanceController::class, 'balance'])->name('balance');
+        });
+
+        // Contact Messages Management
+        Route::prefix('contact-messages')->name('contact-messages.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\AdminContactController::class, 'index'])->name('index');
+            Route::patch('/{contactMessage}/read', [\App\Http\Controllers\Admin\AdminContactController::class, 'markAsRead'])->name('read');
+            Route::post('/{contactMessage}/reply', [\App\Http\Controllers\Admin\AdminContactController::class, 'reply'])->name('reply');
+            Route::delete('/{contactMessage}', [\App\Http\Controllers\Admin\AdminContactController::class, 'destroy'])->name('destroy');
         });
     });
 

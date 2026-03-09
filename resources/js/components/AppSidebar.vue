@@ -5,6 +5,7 @@ import {
     FileText, 
     Briefcase,
     Mail,
+    MailOpen,
     Settings,
     HelpCircle,
     BookOpen,
@@ -16,6 +17,7 @@ import {
     CreditCard,
     Sparkles,
     Quote,
+    Wallet,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import NavFooter from '@/components/NavFooter.vue';
@@ -149,6 +151,16 @@ const adminPlatformItems: NavItem[] = [
         title: 'Newsletter',
         href: '/admin/newsletter',
         icon: Mail,
+    },
+    {
+        title: 'Finance',
+        href: '/admin/finance',
+        icon: Wallet,
+    },
+    {
+        title: 'Contact Messages',
+        href: '/admin/contact-messages',
+        icon: MailOpen,
     },
     {
         title: 'Settings',

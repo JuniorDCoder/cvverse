@@ -33,7 +33,6 @@ const props = defineProps<{
     contactData: ContactData;
 }>();
 
-const isSubmitting = ref(false);
 const isSubmitted = ref(false);
 
 const form = useForm({
@@ -45,13 +44,13 @@ const form = useForm({
 });
 
 const submitForm = () => {
-    isSubmitting.value = true;
-    // Simulate form submission
-    setTimeout(() => {
-        isSubmitting.value = false;
-        isSubmitted.value = true;
-        form.reset();
-    }, 1500);
+    form.post('/contact', {
+        preserveScroll: true,
+        onSuccess: () => {
+            isSubmitted.value = true;
+            form.reset();
+        },
+    });
 };
 
 const contactMethods = computed(() => [
@@ -204,6 +203,7 @@ const activeSocialLinks = computed(() => {
                                         placeholder="John Doe"
                                         required 
                                     />
+                                    <p v-if="form.errors.name" class="text-sm text-destructive">{{ form.errors.name }}</p>
                                 </div>
                                 <div class="space-y-2">
                                     <Label for="email">Email Address *</Label>
@@ -214,6 +214,7 @@ const activeSocialLinks = computed(() => {
                                         placeholder="john@example.com"
                                         required 
                                     />
+                                    <p v-if="form.errors.email" class="text-sm text-destructive">{{ form.errors.email }}</p>
                                 </div>
                             </div>
                             
@@ -236,6 +237,7 @@ const activeSocialLinks = computed(() => {
                                         placeholder="How can we help?"
                                         required 
                                     />
+                                    <p v-if="form.errors.subject" class="text-sm text-destructive">{{ form.errors.subject }}</p>
                                 </div>
                             </div>
                             
@@ -249,15 +251,16 @@ const activeSocialLinks = computed(() => {
                                     placeholder="Tell us more about your inquiry..."
                                     required
                                 />
+                                <p v-if="form.errors.message" class="text-sm text-destructive">{{ form.errors.message }}</p>
                             </div>
                             
                             <Button 
                                 type="submit" 
                                 size="lg" 
                                 class="w-full sm:w-auto"
-                                :disabled="isSubmitting"
+                                :disabled="form.processing"
                             >
-                                <span v-if="isSubmitting" class="flex items-center gap-2">
+                                <span v-if="form.processing" class="flex items-center gap-2">
                                     <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
