@@ -307,17 +307,17 @@ const submitGenerate = () => {
             <!-- Tabs -->
             <Tabs v-model="activeTab" class="w-full">
                 <TabsList class="grid w-full grid-cols-3">
-                    <TabsTrigger value="upload">
-                        <Upload class="h-4 w-4 mr-2" />
-                        Upload CV
+                    <TabsTrigger value="upload" class="text-xs md:text-sm px-2 md:px-3">
+                        <Upload class="h-4 w-4 mr-1 md:mr-2 shrink-0" />
+                        <span class="truncate">Upload</span>
                     </TabsTrigger>
-                    <TabsTrigger value="generate">
-                        <Sparkles class="h-4 w-4 mr-2" />
-                        AI Generate
+                    <TabsTrigger value="generate" class="text-xs md:text-sm px-2 md:px-3">
+                        <Sparkles class="h-4 w-4 mr-1 md:mr-2 shrink-0" />
+                        <span class="truncate">AI Generate</span>
                     </TabsTrigger>
-                    <TabsTrigger value="manual">
-                        <FileText class="h-4 w-4 mr-2" />
-                        Create Manually
+                    <TabsTrigger value="manual" class="text-xs md:text-sm px-2 md:px-3">
+                        <FileText class="h-4 w-4 mr-1 md:mr-2 shrink-0" />
+                        <span class="truncate">Manual</span>
                     </TabsTrigger>
                 </TabsList>
 

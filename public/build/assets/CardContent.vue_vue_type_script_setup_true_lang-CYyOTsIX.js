@@ -1,1 +1,0 @@
-import{c as o}from"./index-DiYr_ax-.js";import{d as n,c as t,I as r,n as c,u as l,o as p}from"./app-D9_JhUBL.js";const i=n({__name:"CardContent",props:{class:{}},setup(s){const a=s;return(e,m)=>(p(),t("div",{"data-slot":"card-content",class:c(l(o)("px-6",a.class))},[r(e.$slots,"default")],2))}});export{i as _};

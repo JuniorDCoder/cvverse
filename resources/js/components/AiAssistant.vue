@@ -360,7 +360,7 @@ defineExpose({ toggleChat });
     <div 
         class="fixed z-50 flex flex-col items-end gap-2 print:hidden transition-all duration-300"
         :class="[
-            isFullscreen ? 'inset-0 items-center justify-center bg-black/40 backdrop-blur-sm p-4 md:p-10' : 'bottom-6 right-6'
+            isFullscreen ? 'inset-0 items-center justify-center bg-black/40 backdrop-blur-sm p-4 md:p-10' : 'bottom-20 right-4 md:bottom-6 md:right-6'
         ]"
     >
         <!-- Chat Window -->
@@ -663,10 +663,10 @@ defineExpose({ toggleChat });
         <Button
             v-if="!isOpen"
             size="lg"
-            class="rounded-full shadow-2xl h-16 w-16 p-0 animate-in fade-in zoom-in duration-500 hover:scale-110 active:scale-95 transition-all bg-gradient-to-br from-primary to-primary/80"
+            class="rounded-full shadow-2xl p-0 animate-in fade-in zoom-in duration-500 hover:scale-110 active:scale-95 transition-all bg-gradient-to-br from-primary to-primary/80 h-12 w-12 md:h-16 md:w-16"
             @click="toggleChat"
         >
-            <MessageSquare class="h-7 w-7" />
+            <MessageSquare class="h-5 w-5 md:h-7 md:w-7" />
         </Button>
     </div>
 

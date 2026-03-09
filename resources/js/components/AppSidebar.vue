@@ -8,7 +8,6 @@ import {
     MailOpen,
     Settings,
     HelpCircle,
-    BookOpen,
     Users,
     BarChart3,
     LayoutTemplate,
@@ -18,6 +17,7 @@ import {
     Sparkles,
     Quote,
     Wallet,
+    Headset,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import NavFooter from '@/components/NavFooter.vue';
@@ -158,6 +158,11 @@ const adminPlatformItems: NavItem[] = [
         icon: Wallet,
     },
     {
+        title: 'Support Chat',
+        href: '/admin/support-chat',
+        icon: Headset,
+    },
+    {
         title: 'Contact Messages',
         href: '/admin/contact-messages',
         icon: MailOpen,
@@ -180,13 +185,8 @@ const adminNavItems: NavItem[] = [
 const footerNavItems: NavItem[] = [
     {
         title: 'Help Center',
-        href: '/contact',
+        href: '/help-center',
         icon: HelpCircle,
-    },
-    {
-        title: 'Documentation',
-        href: '/services',
-        icon: BookOpen,
     },
 ];
 </script>

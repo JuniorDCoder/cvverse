@@ -232,24 +232,54 @@ const deleteApplication = () => {
                     :href="`/jobs/${app.id}`"
                     class="block p-4 rounded-xl border bg-card hover:shadow-lg hover:border-primary/50 transition-all group"
                 >
-                    <div class="flex items-start gap-4">
-                        <div class="h-12 w-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-primary font-bold text-lg shrink-0">
+                    <div class="flex items-start gap-3 md:gap-4">
+                        <div class="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-primary font-bold text-base md:text-lg shrink-0">
                             {{ app.company?.name?.charAt(0) || app.title.charAt(0) }}
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-start justify-between gap-4">
-                                <div>
-                                    <h3 class="font-semibold text-lg group-hover:text-primary transition-colors">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <h3 class="font-semibold text-base md:text-lg group-hover:text-primary transition-colors truncate">
                                         {{ app.title }}
                                     </h3>
                                     <div class="flex items-center gap-2 text-muted-foreground mt-1">
                                         <Building2 class="h-4 w-4 shrink-0" />
-                                        <span>{{ app.company?.name || 'Unknown Company' }}</span>
+                                        <span class="truncate">{{ app.company?.name || 'Unknown Company' }}</span>
                                     </div>
                                 </div>
-                                <Badge :class="statusColors[app.status]" class="shrink-0">
-                                    {{ statusLabels[app.status] }}
-                                </Badge>
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <Badge :class="statusColors[app.status]" class="text-xs">
+                                        {{ statusLabels[app.status] }}
+                                    </Badge>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger as-child @click.stop.prevent>
+                                            <Button variant="ghost" size="icon" class="shrink-0 h-8 w-8">
+                                                <MoreHorizontal class="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem as-child>
+                                                <Link :href="`/jobs/${app.id}`" class="flex items-center">
+                                                    <Eye class="h-4 w-4 mr-2" />
+                                                    View Details
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem as-child>
+                                                <Link :href="`/jobs/${app.id}/edit`" class="flex items-center">
+                                                    <Edit class="h-4 w-4 mr-2" />
+                                                    Edit
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                class="text-destructive focus:text-destructive"
+                                                @click.stop="confirmDelete(app.id)"
+                                            >
+                                                <Trash2 class="h-4 w-4 mr-2" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
                             </div>
                             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 text-sm text-muted-foreground">
                                 <div v-if="app.location" class="flex items-center gap-1">
@@ -281,34 +311,6 @@ const deleteApplication = () => {
                                 </a>
                             </div>
                         </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger as-child @click.stop.prevent>
-                                <Button variant="ghost" size="icon" class="shrink-0">
-                                    <MoreHorizontal class="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem as-child>
-                                    <Link :href="`/jobs/${app.id}`" class="flex items-center">
-                                        <Eye class="h-4 w-4 mr-2" />
-                                        View Details
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem as-child>
-                                    <Link :href="`/jobs/${app.id}/edit`" class="flex items-center">
-                                        <Edit class="h-4 w-4 mr-2" />
-                                        Edit
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    class="text-destructive focus:text-destructive"
-                                    @click.stop="confirmDelete(app.id)"
-                                >
-                                    <Trash2 class="h-4 w-4 mr-2" />
-                                    Delete
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
                     </div>
                 </Link>
 

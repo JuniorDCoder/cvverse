@@ -172,6 +172,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ChatSession::class);
     }
 
+    public function helpConversations(): HasMany
+    {
+        return $this->hasMany(HelpConversation::class);
+    }
+
     public function primaryCv(): ?Cv
     {
         return $this->cvs()->where('is_primary', true)->first();

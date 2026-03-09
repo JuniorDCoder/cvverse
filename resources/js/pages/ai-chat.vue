@@ -124,10 +124,14 @@ const sendMessage = async () => {
 
         if (response.ok) {
             const data = await response.json();
-            messages.value.pop(); // Remove optimistic
             if (data.success && data.user_message && data.assistant_message) {
+                messages.value.pop(); // Replace optimistic with server-confirmed
                 messages.value.push(data.user_message);
                 messages.value.push(data.assistant_message);
+                playNotificationSound();
+            } else if (data.success) {
+                // Keep optimistic user message, just add the assistant response
+                messages.value.push({ role: 'assistant', content: data.message || 'Sorry, something went wrong. Please try again.' });
                 playNotificationSound();
             } else {
                 messages.value.push({ role: 'assistant', content: data.message || 'Sorry, something went wrong. Please try again.' });

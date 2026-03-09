@@ -80,6 +80,17 @@ Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
     Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class, 'chat'])->name('ai-chat.send');
     Route::get('/ai-chat/history', [\App\Http\Controllers\AiChatController::class, 'history'])->name('ai-chat.history');
 
+    // Help Center Chat
+    Route::prefix('help-center')->name('help-center.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\HelpChatController::class, 'index'])->name('index');
+        Route::get('/{conversationId}', [\App\Http\Controllers\HelpChatController::class, 'index'])->name('show')->where('conversationId', '[0-9]+');
+        Route::post('/send', [\App\Http\Controllers\HelpChatController::class, 'send'])->name('send');
+        Route::get('/poll', [\App\Http\Controllers\HelpChatController::class, 'poll'])->name('poll');
+        Route::post('/close', [\App\Http\Controllers\HelpChatController::class, 'close'])->name('close');
+        Route::post('/reopen', [\App\Http\Controllers\HelpChatController::class, 'reopen'])->name('reopen');
+        Route::post('/typing', [\App\Http\Controllers\HelpChatController::class, 'typing'])->name('typing');
+    });
+
     // AI CV Generator
     Route::prefix('ai-cv-generator')->name('ai-cv-generator.')->group(function () {
         Route::get('/', [AiCvGeneratorController::class, 'index'])->name('index');
@@ -237,6 +248,19 @@ Route::middleware(['auth', 'verified', 'onboarding'])->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\AdminFinanceController::class, 'index'])->name('index');
             Route::post('/withdraw', [\App\Http\Controllers\Admin\AdminFinanceController::class, 'withdraw'])->name('withdraw');
             Route::get('/balance', [\App\Http\Controllers\Admin\AdminFinanceController::class, 'balance'])->name('balance');
+        });
+
+        // Support Chat Management
+        Route::prefix('support-chat')->name('support-chat.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\AdminSupportChatController::class, 'index'])->name('index');
+            Route::get('/unread-count', [\App\Http\Controllers\Admin\AdminSupportChatController::class, 'unreadCount'])->name('unread-count');
+            Route::post('/settings', [\App\Http\Controllers\Admin\AdminSupportChatController::class, 'updateSettings'])->name('settings');
+            Route::get('/{conversation}', [\App\Http\Controllers\Admin\AdminSupportChatController::class, 'show'])->name('show');
+            Route::post('/{conversation}/reply', [\App\Http\Controllers\Admin\AdminSupportChatController::class, 'reply'])->name('reply');
+            Route::get('/{conversation}/poll', [\App\Http\Controllers\Admin\AdminSupportChatController::class, 'poll'])->name('poll');
+            Route::post('/{conversation}/close', [\App\Http\Controllers\Admin\AdminSupportChatController::class, 'close'])->name('close');
+            Route::post('/{conversation}/reopen', [\App\Http\Controllers\Admin\AdminSupportChatController::class, 'reopen'])->name('reopen');
+            Route::post('/{conversation}/typing', [\App\Http\Controllers\Admin\AdminSupportChatController::class, 'typing'])->name('typing');
         });
 
         // Contact Messages Management

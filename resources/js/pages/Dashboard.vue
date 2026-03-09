@@ -146,7 +146,7 @@ const coverLettersHref = computed(() => (canUseAiCoverLetters.value ? coverLette
                 <div>
                     <h1 class="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
                         {{ greeting }}, {{ user?.name?.split(' ')[0] }}! 👋
-                        <Badge v-if="planSummary.should_upgrade" variant="outline" class="border-amber-300 bg-amber-50 text-amber-700">
+                        <Badge v-if="planSummary.should_upgrade" variant="outline" class="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/50 dark:text-amber-300">
                             Upgrade Recommended
                         </Badge>
                     </h1>
@@ -154,7 +154,7 @@ const coverLettersHref = computed(() => (canUseAiCoverLetters.value ? coverLette
                         Here's what's happening with your job search today.
                     </p>
                 </div>
-                <div class="flex gap-3">
+                <div class="flex flex-wrap gap-3">
                     <Button as-child class="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg shadow-purple-500/25">
                         <Link :href="aiCvHref">
                             <Sparkles class="h-4 w-4 mr-2" />
@@ -176,7 +176,7 @@ const coverLettersHref = computed(() => (canUseAiCoverLetters.value ? coverLette
                 </div>
             </div>
 
-            <Card v-if="planSummary.should_upgrade" class="border-amber-200 bg-amber-50/60">
+            <Card v-if="planSummary.should_upgrade" class="border-amber-200 bg-amber-50/60 dark:border-amber-700 dark:bg-amber-950/40">
                 <CardHeader class="pb-3">
                     <CardTitle class="text-base">
                         Current Plan: {{ planSummary.current_plan.name }}
@@ -190,7 +190,7 @@ const coverLettersHref = computed(() => (canUseAiCoverLetters.value ? coverLette
                         <div
                             v-for="item in limitedUsage"
                             :key="item.key"
-                            class="rounded-md border bg-background/80 px-3 py-2 text-sm"
+                            class="rounded-md border bg-background/80 px-3 py-2 text-sm dark:border-amber-800"
                         >
                             <p class="font-medium">{{ item.label }}</p>
                             <p class="text-muted-foreground">
