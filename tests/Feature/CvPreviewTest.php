@@ -99,3 +99,52 @@ test('preview html contains cv sections', function () {
     $response->assertSee('Laravel');
     $response->assertSee('Vue.js');
 });
+
+test('preview html does not crash when experience title is missing', function () {
+    $cvWithoutExperienceTitle = Cv::factory()->create([
+        'user_id' => $this->user->id,
+        'template' => 'modern',
+        'personal_info' => [
+            'full_name' => 'No Title User',
+            'email' => 'notitle@example.com',
+        ],
+        'experience' => [
+            [
+                'company' => 'Acme Corp',
+                'start_date' => '2022-01',
+                'description' => 'Worked on important features',
+            ],
+        ],
+    ]);
+
+    $response = $this->actingAs($this->user)
+        ->get("/cvs/{$cvWithoutExperienceTitle->id}/preview-html");
+
+    $response->assertSuccessful();
+    $response->assertSee('No Title User');
+    $response->assertSee('Acme Corp');
+});
+
+test('pdf export does not crash when experience title is missing', function () {
+    $cvWithoutExperienceTitle = Cv::factory()->create([
+        'user_id' => $this->user->id,
+        'template' => 'modern',
+        'personal_info' => [
+            'full_name' => 'No Title User',
+            'email' => 'notitle@example.com',
+        ],
+        'experience' => [
+            [
+                'company' => 'Acme Corp',
+                'start_date' => '2022-01',
+                'description' => 'Worked on important features',
+            ],
+        ],
+    ]);
+
+    $response = $this->actingAs($this->user)
+        ->get("/cvs/{$cvWithoutExperienceTitle->id}/export/pdf");
+
+    $response->assertSuccessful();
+    $response->assertHeader('content-type', 'application/pdf');
+});

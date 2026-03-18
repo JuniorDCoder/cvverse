@@ -104,12 +104,12 @@
             @foreach($cv->experience as $exp)
                 <div class="item">
                     <div class="item-header">
-                        <span class="item-title">{{ $exp['title'] }}</span>
+                        <span class="item-title">{{ $exp['title'] ?? 'Role' }}</span>
                         <span class="item-date">
-                            {{ $exp['start_date'] }} - {{ ($exp['current'] ?? false) ? 'Present' : ($exp['end_date'] ?? '') }}
+                            {{ $exp['start_date'] ?? '' }} - {{ ($exp['current'] ?? false) ? 'Present' : ($exp['end_date'] ?? '') }}
                         </span>
                     </div>
-                    <div class="item-subtitle">{{ $exp['company'] }} @if(isset($exp['location'])) - {{ $exp['location'] }} @endif</div>
+                    <div class="item-subtitle">{{ $exp['company'] ?? '' }} @if(isset($exp['location'])) - {{ $exp['location'] }} @endif</div>
                     <p>{!! nl2br(e($exp['description'] ?? '')) !!}</p>
                 </div>
             @endforeach
@@ -122,12 +122,12 @@
             @foreach($cv->education as $edu)
                 <div class="item">
                     <div class="item-header">
-                        <span class="item-title">{{ $edu['degree'] }} {{ isset($edu['field']) ? 'in ' . $edu['field'] : '' }}</span>
+                        <span class="item-title">{{ $edu['degree'] ?? '' }} {{ isset($edu['field']) ? 'in ' . $edu['field'] : '' }}</span>
                         <span class="item-date">
                             {{ $edu['start_date'] ?? '' }} - {{ $edu['end_date'] ?? '' }}
                         </span>
                     </div>
-                    <div class="item-subtitle">{{ $edu['institution'] }}</div>
+                    <div class="item-subtitle">{{ $edu['institution'] ?? '' }}</div>
                     @if(isset($edu['gpa']))
                         <p>GPA: {{ $edu['gpa'] }}</p>
                     @endif
@@ -153,8 +153,8 @@
             <ul class="languages-list">
                 @foreach($cv->languages as $lang)
                     <li class="language-item">
-                        <strong>{{ $lang['language'] }}</strong> 
-                        ({{ ucfirst($lang['proficiency']) }})
+                        <strong>{{ $lang['language'] ?? 'Language' }}</strong>
+                        ({{ ucfirst($lang['proficiency'] ?? 'basic') }})
                     </li>
                 @endforeach
             </ul>
