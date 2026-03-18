@@ -148,3 +148,33 @@ test('pdf export does not crash when experience title is missing', function () {
     $response->assertSuccessful();
     $response->assertHeader('content-type', 'application/pdf');
 });
+
+test('admin preview html does not crash with malformed cv arrays', function () {
+    $cvWithMalformedArrays = Cv::factory()->create([
+        'user_id' => $this->user->id,
+        'template' => 'modern',
+        'personal_info' => [
+            'full_name' => 'Admin Preview User',
+            'email' => 'admin-preview@example.com',
+        ],
+        'experience' => [
+            [
+                'company' => 'Acme Corp',
+                'start_date' => '2022-01',
+                'description' => 'Worked on important features',
+            ],
+        ],
+        'projects' => [
+            [
+                'description' => 'Project without name and title keys',
+            ],
+        ],
+    ]);
+
+    $response = $this->actingAs($this->admin)
+        ->get("/admin/cvs/{$cvWithMalformedArrays->id}/preview-html");
+
+    $response->assertSuccessful();
+    $response->assertSee('Admin Preview User');
+    $response->assertSee('Acme Corp');
+});

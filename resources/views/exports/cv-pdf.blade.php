@@ -80,14 +80,24 @@
     </style>
 </head>
 <body>
+    @php
+        $personalInfo = is_array($cv->personal_info) ? $cv->personal_info : [];
+        $experiences = is_array($cv->experience) ? $cv->experience : [];
+        $educationItems = is_array($cv->education) ? $cv->education : [];
+        $skills = is_array($cv->skills) ? $cv->skills : [];
+        $languages = is_array($cv->languages) ? $cv->languages : [];
+        $projects = is_array($cv->projects) ? $cv->projects : [];
+        $certifications = is_array($cv->certifications) ? $cv->certifications : [];
+    @endphp
+
     <div class="header">
-        <div class="name">{{ $cv->personal_info['full_name'] ?? 'Your Name' }}</div>
+        <div class="name">{{ $personalInfo['full_name'] ?? 'Your Name' }}</div>
         <div class="contact-info">
-            @if(isset($cv->personal_info['location'])) {{ $cv->personal_info['location'] }} @endif
-            @if(isset($cv->personal_info['email'])) | {{ $cv->personal_info['email'] }} @endif
-            @if(isset($cv->personal_info['phone'])) | {{ $cv->personal_info['phone'] }} @endif
-            @if(isset($cv->personal_info['linkedin'])) | {{ $cv->personal_info['linkedin'] }} @endif
-            @if(isset($cv->personal_info['website'])) | {{ $cv->personal_info['website'] }} @endif
+            @if(isset($personalInfo['location'])) {{ $personalInfo['location'] }} @endif
+            @if(isset($personalInfo['email'])) | {{ $personalInfo['email'] }} @endif
+            @if(isset($personalInfo['phone'])) | {{ $personalInfo['phone'] }} @endif
+            @if(isset($personalInfo['linkedin'])) | {{ $personalInfo['linkedin'] }} @endif
+            @if(isset($personalInfo['website'])) | {{ $personalInfo['website'] }} @endif
         </div>
     </div>
 
@@ -98,10 +108,10 @@
         </div>
     @endif
 
-    @if(!empty($cv->experience))
+    @if(! empty($experiences))
         <div class="section">
             <div class="section-title">Work Experience</div>
-            @foreach($cv->experience as $exp)
+            @foreach($experiences as $exp)
                 <div class="item">
                     <div class="item-header">
                         <span class="item-title">{{ $exp['title'] ?? 'Role' }}</span>
@@ -116,10 +126,10 @@
         </div>
     @endif
 
-    @if(!empty($cv->education))
+    @if(! empty($educationItems))
         <div class="section">
             <div class="section-title">Education</div>
-            @foreach($cv->education as $edu)
+            @foreach($educationItems as $edu)
                 <div class="item">
                     <div class="item-header">
                         <span class="item-title">{{ $edu['degree'] ?? '' }} {{ isset($edu['field']) ? 'in ' . $edu['field'] : '' }}</span>
@@ -136,22 +146,22 @@
         </div>
     @endif
 
-    @if(!empty($cv->skills))
+    @if(! empty($skills))
         <div class="section">
             <div class="section-title">Skills</div>
             <ul class="skills-list">
-                @foreach($cv->skills as $skill)
+                @foreach($skills as $skill)
                     <li class="skill-item">{{ $skill }}</li>
                 @endforeach
             </ul>
         </div>
     @endif
 
-    @if(!empty($cv->languages))
+    @if(! empty($languages))
         <div class="section">
             <div class="section-title">Languages</div>
             <ul class="languages-list">
-                @foreach($cv->languages as $lang)
+                @foreach($languages as $lang)
                     <li class="language-item">
                         <strong>{{ $lang['language'] ?? 'Language' }}</strong>
                         ({{ ucfirst($lang['proficiency'] ?? 'basic') }})
@@ -161,10 +171,10 @@
         </div>
     @endif
     
-    @if(!empty($cv->projects))
+    @if(! empty($projects))
         <div class="section">
             <div class="section-title">Projects</div>
-            @foreach($cv->projects as $project)
+            @foreach($projects as $project)
                 <div class="item">
                     <div class="item-header">
                         <span class="item-title">{{ $project['name'] ?? $project['title'] ?? 'Project' }}</span>
@@ -173,7 +183,7 @@
                         <div class="item-subtitle">{{ $project['url'] }}</div>
                     @endif
                     <p>{!! nl2br(e($project['description'] ?? '')) !!}</p>
-                    @if(!empty($project['technologies']))
+                    @if(! empty($project['technologies']) && is_array($project['technologies']))
                         <ul class="skills-list" style="margin-top: 5px;">
                             @foreach($project['technologies'] as $tech)
                                 <li class="skill-item">{{ $tech }}</li>
@@ -185,10 +195,10 @@
         </div>
     @endif
 
-    @if(!empty($cv->certifications))
+    @if(! empty($certifications))
         <div class="section">
             <div class="section-title">Certifications</div>
-            @foreach($cv->certifications as $cert)
+            @foreach($certifications as $cert)
                 <div class="item">
                     <div class="item-header">
                         <span class="item-title">{{ $cert['name'] ?? 'Certification' }}</span>

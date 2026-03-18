@@ -219,16 +219,16 @@ const formatDate = (date: string) => {
 
         <div class="flex h-full flex-1 flex-col gap-6 p-6">
             <!-- Header -->
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div class="flex min-w-0 items-center gap-4">
                     <Button variant="ghost" size="icon" as-child>
                         <Link href="/admin/cvs">
                             <ArrowLeft class="h-4 w-4" />
                         </Link>
                     </Button>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h1 class="text-2xl font-bold">{{ cv.name }}</h1>
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h1 class="truncate text-2xl font-bold">{{ cv.name }}</h1>
                             <Badge v-if="cv.is_primary" variant="default">
                                 <Star class="mr-1 h-3 w-3" />
                                 Primary
@@ -242,20 +242,20 @@ const formatDate = (date: string) => {
                         </p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <Button variant="outline" @click="generateSuggestions">
+                <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+                    <Button class="w-full sm:w-auto" variant="outline" @click="generateSuggestions">
                         <Sparkles class="mr-2 h-4 w-4" />
                         AI Suggestions
                     </Button>
-                    <Button variant="outline" @click="showPreviewModal = true">
+                    <Button class="w-full sm:w-auto" variant="outline" @click="showPreviewModal = true">
                         <Eye class="mr-2 h-4 w-4" />
                         Preview
                     </Button>
-                    <Button variant="outline" @click="downloadPdf">
+                    <Button class="w-full sm:w-auto" variant="outline" @click="downloadPdf">
                         <Download class="mr-2 h-4 w-4" />
                         Download PDF
                     </Button>
-                    <Button as-child>
+                    <Button class="w-full sm:w-auto" as-child>
                         <Link :href="`/admin/cvs/${cv.id}/edit`">
                             <Pencil class="mr-2 h-4 w-4" />
                             Edit CV
