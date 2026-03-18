@@ -178,3 +178,35 @@ test('admin preview html does not crash with malformed cv arrays', function () {
     $response->assertSee('Admin Preview User');
     $response->assertSee('Acme Corp');
 });
+
+test('preview html does not crash when cv values are arrays instead of strings', function () {
+    $cvWithArrayValues = Cv::factory()->create([
+        'user_id' => $this->user->id,
+        'template' => 'modern',
+        'personal_info' => [
+            'full_name' => 'Array Value User',
+            'email' => ['primary' => 'array-user@example.com'],
+            'location' => ['city' => 'Douala', 'country' => 'Cameroon'],
+        ],
+        'summary' => 'Experienced engineer',
+        'experience' => [
+            [
+                'company' => ['Acme', 'Corp'],
+                'title' => ['Senior', 'Engineer'],
+                'start_date' => ['2021-01'],
+                'description' => ['Built', 'and', 'maintained', 'features'],
+            ],
+        ],
+        'skills' => [
+            ['name' => 'PHP'],
+            'Laravel',
+        ],
+    ]);
+
+    $response = $this->actingAs($this->user)
+        ->get("/cvs/{$cvWithArrayValues->id}/preview-html");
+
+    $response->assertSuccessful();
+    $response->assertSee('Array Value User');
+    $response->assertSee('array-user@example.com');
+});

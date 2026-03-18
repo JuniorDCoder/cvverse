@@ -88,23 +88,63 @@
         $languages = is_array($cv->languages) ? $cv->languages : [];
         $projects = is_array($cv->projects) ? $cv->projects : [];
         $certifications = is_array($cv->certifications) ? $cv->certifications : [];
+
+        $toText = static function ($value, string $default = ''): string {
+            if ($value === null) {
+                return $default;
+            }
+
+            if (is_scalar($value)) {
+                return (string) $value;
+            }
+
+            if ($value instanceof \Stringable) {
+                return (string) $value;
+            }
+
+            if (is_array($value)) {
+                $parts = [];
+
+                array_walk_recursive($value, static function ($item) use (&$parts): void {
+                    if (is_scalar($item)) {
+                        $parts[] = (string) $item;
+                    }
+                });
+
+                return $parts !== [] ? implode(', ', $parts) : $default;
+            }
+
+            return $default;
+        };
+
+        $toBool = static function ($value): bool {
+            if (is_bool($value)) {
+                return $value;
+            }
+
+            if (is_numeric($value) || is_string($value)) {
+                return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+            }
+
+            return false;
+        };
     @endphp
 
     <div class="header">
-        <div class="name">{{ $personalInfo['full_name'] ?? 'Your Name' }}</div>
+        <div class="name">{{ $toText($personalInfo['full_name'] ?? null, 'Your Name') }}</div>
         <div class="contact-info">
-            @if(isset($personalInfo['location'])) {{ $personalInfo['location'] }} @endif
-            @if(isset($personalInfo['email'])) | {{ $personalInfo['email'] }} @endif
-            @if(isset($personalInfo['phone'])) | {{ $personalInfo['phone'] }} @endif
-            @if(isset($personalInfo['linkedin'])) | {{ $personalInfo['linkedin'] }} @endif
-            @if(isset($personalInfo['website'])) | {{ $personalInfo['website'] }} @endif
+            @if(isset($personalInfo['location'])) {{ $toText($personalInfo['location']) }} @endif
+            @if(isset($personalInfo['email'])) | {{ $toText($personalInfo['email']) }} @endif
+            @if(isset($personalInfo['phone'])) | {{ $toText($personalInfo['phone']) }} @endif
+            @if(isset($personalInfo['linkedin'])) | {{ $toText($personalInfo['linkedin']) }} @endif
+            @if(isset($personalInfo['website'])) | {{ $toText($personalInfo['website']) }} @endif
         </div>
     </div>
 
     @if($cv->summary)
         <div class="section">
             <div class="section-title">Professional Summary</div>
-            <p>{{ $cv->summary }}</p>
+            <p>{{ $toText($cv->summary) }}</p>
         </div>
     @endif
 
@@ -114,13 +154,13 @@
             @foreach($experiences as $exp)
                 <div class="item">
                     <div class="item-header">
-                        <span class="item-title">{{ $exp['title'] ?? 'Role' }}</span>
+                        <span class="item-title">{{ $toText($exp['title'] ?? null, 'Role') }}</span>
                         <span class="item-date">
-                            {{ $exp['start_date'] ?? '' }} - {{ ($exp['current'] ?? false) ? 'Present' : ($exp['end_date'] ?? '') }}
+                            {{ $toText($exp['start_date'] ?? null) }} - {{ $toBool($exp['current'] ?? false) ? 'Present' : $toText($exp['end_date'] ?? null) }}
                         </span>
                     </div>
-                    <div class="item-subtitle">{{ $exp['company'] ?? '' }} @if(isset($exp['location'])) - {{ $exp['location'] }} @endif</div>
-                    <p>{!! nl2br(e($exp['description'] ?? '')) !!}</p>
+                    <div class="item-subtitle">{{ $toText($exp['company'] ?? null) }} @if(isset($exp['location'])) - {{ $toText($exp['location']) }} @endif</div>
+                    <p>{!! nl2br(e($toText($exp['description'] ?? null))) !!}</p>
                 </div>
             @endforeach
         </div>
@@ -132,14 +172,14 @@
             @foreach($educationItems as $edu)
                 <div class="item">
                     <div class="item-header">
-                        <span class="item-title">{{ $edu['degree'] ?? '' }} {{ isset($edu['field']) ? 'in ' . $edu['field'] : '' }}</span>
+                        <span class="item-title">{{ $toText($edu['degree'] ?? null) }} {{ isset($edu['field']) ? 'in ' . $toText($edu['field']) : '' }}</span>
                         <span class="item-date">
-                            {{ $edu['start_date'] ?? '' }} - {{ $edu['end_date'] ?? '' }}
+                            {{ $toText($edu['start_date'] ?? null) }} - {{ $toText($edu['end_date'] ?? null) }}
                         </span>
                     </div>
-                    <div class="item-subtitle">{{ $edu['institution'] ?? '' }}</div>
+                    <div class="item-subtitle">{{ $toText($edu['institution'] ?? null) }}</div>
                     @if(isset($edu['gpa']))
-                        <p>GPA: {{ $edu['gpa'] }}</p>
+                        <p>GPA: {{ $toText($edu['gpa']) }}</p>
                     @endif
                 </div>
             @endforeach
@@ -151,7 +191,7 @@
             <div class="section-title">Skills</div>
             <ul class="skills-list">
                 @foreach($skills as $skill)
-                    <li class="skill-item">{{ $skill }}</li>
+                    <li class="skill-item">{{ $toText($skill) }}</li>
                 @endforeach
             </ul>
         </div>
@@ -163,8 +203,8 @@
             <ul class="languages-list">
                 @foreach($languages as $lang)
                     <li class="language-item">
-                        <strong>{{ $lang['language'] ?? 'Language' }}</strong>
-                        ({{ ucfirst($lang['proficiency'] ?? 'basic') }})
+                        <strong>{{ $toText($lang['language'] ?? null, 'Language') }}</strong>
+                        ({{ ucfirst($toText($lang['proficiency'] ?? null, 'basic')) }})
                     </li>
                 @endforeach
             </ul>
@@ -177,16 +217,16 @@
             @foreach($projects as $project)
                 <div class="item">
                     <div class="item-header">
-                        <span class="item-title">{{ $project['name'] ?? $project['title'] ?? 'Project' }}</span>
+                        <span class="item-title">{{ $toText($project['name'] ?? ($project['title'] ?? null), 'Project') }}</span>
                     </div>
                     @if(isset($project['url']))
-                        <div class="item-subtitle">{{ $project['url'] }}</div>
+                        <div class="item-subtitle">{{ $toText($project['url']) }}</div>
                     @endif
-                    <p>{!! nl2br(e($project['description'] ?? '')) !!}</p>
+                    <p>{!! nl2br(e($toText($project['description'] ?? null))) !!}</p>
                     @if(! empty($project['technologies']) && is_array($project['technologies']))
                         <ul class="skills-list" style="margin-top: 5px;">
                             @foreach($project['technologies'] as $tech)
-                                <li class="skill-item">{{ $tech }}</li>
+                                <li class="skill-item">{{ $toText($tech) }}</li>
                             @endforeach
                         </ul>
                     @endif
@@ -201,16 +241,16 @@
             @foreach($certifications as $cert)
                 <div class="item">
                     <div class="item-header">
-                        <span class="item-title">{{ $cert['name'] ?? 'Certification' }}</span>
+                        <span class="item-title">{{ $toText($cert['name'] ?? null, 'Certification') }}</span>
                         @if(isset($cert['date']))
-                            <span class="item-date">{{ $cert['date'] }}</span>
+                            <span class="item-date">{{ $toText($cert['date']) }}</span>
                         @endif
                     </div>
                     @if(isset($cert['issuer']))
-                        <div class="item-subtitle">{{ $cert['issuer'] }}</div>
+                        <div class="item-subtitle">{{ $toText($cert['issuer']) }}</div>
                     @endif
                     @if(isset($cert['url']))
-                        <p style="font-size: 10px; color: #666;">{{ $cert['url'] }}</p>
+                        <p style="font-size: 10px; color: #666;">{{ $toText($cert['url']) }}</p>
                     @endif
                 </div>
             @endforeach
